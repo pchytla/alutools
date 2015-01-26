@@ -25,7 +25,10 @@ use AluPorts;
 use AluSVC;
 use AluSAP;
 use AluSDP qw( %sdptypes ) ;
+use Utils qw( in_array );
 $|=1;
+
+use constant VERSION => '0.1';
 
 use constant IFDESCR => '.1.3.6.1.2.1.2.2.1.2';
 use constant IFNAME => '.1.3.6.1.2.1.31.1.1.1.1';
@@ -123,12 +126,16 @@ sub snmp_session() {
 	return $snmpsession;
 }
 
+#undef - no response
+# 0 - not Alu/TiMOS
+# 1 - ALU/TiMOS
+#
 sub alu_check() {
 	my $s=shift;
 
 	my $r=$s->get_request( -varbindlist => [ '.1.3.6.1.2.1.1.1.0' ] );
 	if (!defined($r)) {
-		return 0;
+		return undef;
 	}
 
 	if ($r->{'.1.3.6.1.2.1.1.1.0'} =~ m/TiMOS/) {	
@@ -171,16 +178,6 @@ sub removebase() {
 }
 
 
-sub in_array()
-{
-   my ($arr,$e) = @_;
-
-   my $str=join('',map { $_ eq $e } @{$arr});
-   return 1 if ($str);
-   return 0;
-}
-
-
 sub write_out()
 {
 	my $name=shift;
@@ -201,7 +198,7 @@ die("Wrong args") unless GetOptions( 'hostname|n=s' => \$hostnamearg,
 					'version|V' => \$version, 
 					'match|m=s' => \$match ,
 					'ports|p' => \$searchports ,
-					'service|s' => \$searchports ,
+					'services|s' => \$searchports ,
 					'help|h' => \$help ,
 				);
 if( $help ) {
@@ -211,11 +208,16 @@ if( $help ) {
    --routerfile|r - Scan routers from file Format 'hostname;community'
    --match|m - - Regular expression to Match'
    --ports|p - - Search for ports ( description )'
-   --service|s - - Search for service ( servicelongname / servcieshortname )'
+   --services|s - - Search for services ( servicelongname / servcieshortname )'
    --help|h - - This help'
    --version|V - Version
 ";
    exit(0);
+}
+
+if (defined($version)) { 
+	print "$0 version ".VERSION."\n";
+	exit(0);
 }
 
 if (!defined($routerfile) && !defined($hostnamearg)) {
@@ -254,8 +256,13 @@ while (<FD>) {
 	my $sess=&snmp_session($hostname,$community,'snmpv2c');
 	my $alu=&alu_check($sess);
 
+	if (!defined($alu)) {
+		print "ERROR: no response from host!!!\n";
+		next;
+	}
+
 	if (!$alu) {
-		print "WARNING: $hostname is not TiMOS ( Alcatel-Lucent OS) !!!"
+		print "WARNING: $hostname is not TiMOS ( Alcatel-Lucent OS) !!!\n"
 	}
 
 	my $ifdescr=&removebase(&my_walk($sess,IFDESCR),IFDESCR);

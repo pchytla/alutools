@@ -1,5 +1,6 @@
 package AluPorts;
 use strict;
+use Utils qw( in_array );
 
 require Exporter;
 
@@ -326,11 +327,10 @@ sub csv {
 sub get_ethphys_ifaces { 
         my $arr = shift;
 	my @ret;
-	my $ethref = \@eth_iftypes;
         die("get_ethphys_ifaces() argument \$arr not ARRAY ref") if (ref($arr) ne 'ARRAY');
 
 	foreach my $a (@{$arr}) {
-		push(@ret,$a) if ($ethref ~~ $a->{'iftype'});
+		push(@ret,$a) if (&in_array(@eth_iftypes,$a->{'iftype'}));
 	}
 
 	return \@ret;
