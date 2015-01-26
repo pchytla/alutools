@@ -1,52 +1,53 @@
-#!/opt/local/bin/perl -w
+#!/usr/bin/perl -w
 #
+## Copyright (C) 2014 Piotr Chytla <pch@packetconsulting.pl>
+##
+## This program is free software; you can redistribute it and/or modify
+## it under the terms of the GNU General Public License as published by
+## the Free Software Foundation; either version 2 of the License, or
+## (at your option) any later version.
+##
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with this program; if not, write to the Free Software
+## Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+#
+
 use Getopt::Long;
 use Net::SNMP qw( :snmp :asn1 );
 use POSIX qw( :math_h );
 use File::Basename;
-
+use AluPorts;
+use AluSVC;
+use AluSAP;
+use AluSDP qw( %sdptypes ) ;
 $|=1;
 
 use constant IFDESCR => '.1.3.6.1.2.1.2.2.1.2';
 use constant IFNAME => '.1.3.6.1.2.1.31.1.1.1.1';
+use constant IFTYPE => '.1.3.6.1.2.1.2.2.1.3';
 use constant IFALIAS => '.1.3.6.1.2.1.31.1.1.1.18';
 use constant SAPLIST => '.1.3.6.1.4.1.6527.3.1.2.4.3.2.1.15';
 use constant SERVTYPE => '.1.3.6.1.4.1.6527.3.1.2.4.2.2.1.3';
 use constant SERVLONGNAME => '.1.3.6.1.4.1.6527.3.1.2.4.2.2.1.6';
 use constant SERVNAME => '.1.3.6.1.4.1.6527.3.1.2.4.2.2.1.29';
+use constant SDPLIST => '.1.3.6.1.4.1.6527.3.1.2.4.4.4.1.33';
+use constant SDPBINDTYPE => '.1.3.6.1.4.1.6527.3.1.2.4.4.4.1.10';
 
 my $hostnamearg;
 my $communityarg;
 my $routerfile;
-my $matcharg;
-my $match;
+my $match = qr/.+/;
 my $help;
 my $version;
 my $outfile;
+my $ports;
+my $service;
 
-my @servtype = (
-                        'unknown' , #(0) Unknown service type
-                        'epipe'   , #(1) Ethernet pipe
-                        'p3pipe'  , #(2) POS pipe
-                        'tls'     , #(3) Virtual private LAN service
-                        'vprn'   , #(4) Virtual private routed network
-                        'ies'     , #(5) Internet enhanced service
-                        'mirror'  , #(6) Mirror service
-                        'apipe'   , #(7) ATM pipe service
-                        'fpipe'   , #(8) FR pipe service
-                        'ipipe'   , #(9) IP interworking pipe service
-                        'cpipe'   , #(10) Circuit Emulation pipe service
-		);
-
-
-my %int;
-my $hint=\%int;
-
-my %intports;
-my $hintports=\%intports;
-
-my @psslist;
-my $hpsslist=\@psslist;
 
 ## {{
 
@@ -122,6 +123,21 @@ sub snmp_session() {
 	return $snmpsession;
 }
 
+sub alu_check() {
+	my $s=shift;
+
+	my $r=$s->get_request( -varbindlist => [ '.1.3.6.1.2.1.1.1.0' ] );
+	if (!defined($r)) {
+		return 0;
+	}
+
+	if ($r->{'.1.3.6.1.2.1.1.1.0'} =~ m/TiMOS/) {	
+		return 1;
+	}
+
+	return 0;
+}
+
 sub my_walk() {
 	my $s=shift;
 	my $oid=shift;
@@ -154,22 +170,6 @@ sub removebase() {
 	return $href;
 }
 
-sub add_service()
-{
-	my ($h,$srvid,$srvlong,$srvshort,$srvtype)  = @_;
-
-	if (defined($srvlong->{$srvid})) {
-		$h->{$srvid}->{'servicelongname'}=$srvlong->{$srvid};
-	}
-
-	if (defined($srvshort->{$srvid})) {
-		$h->{$srvid}->{'serviceshortname'}=$srvshort->{$srvid};
-	}
-
-	if (defined($srvtype->{$srvid})) {
-		$h->{$srvid}->{'servicetype'}=$servtype[$srvtype->{$srvid}];
-	}
-}
 
 sub in_array()
 {
@@ -194,13 +194,25 @@ sub write_out()
 	close(FDOUT);
 }
 
-die("Wrong args") unless GetOptions( 'hostname|h=s' => \$hostnamearg, 'community|C=s' => \$communityarg, 'routerfile|r=s' => \$routerfile, 'version|V' => \$version, 'match|m=s' => \$matcharg );
+
+die("Wrong args") unless GetOptions( 'hostname|n=s' => \$hostnamearg, 
+					'community|C=s' => \$communityarg, 
+					'routerfile|r=s' => \$routerfile, 
+					'version|V' => \$version, 
+					'match|m=s' => \$match ,
+					'ports|p' => \$searchports ,
+					'service|s' => \$searchports ,
+					'help|h' => \$help ,
+				);
 if( $help ) {
    print "Options:
-   --hostname|h -- Scan single hostname
+   --hostname|n -- Scan single hostname
    --communiy|C -- SNMP Community
    --routerfile|r - Scan routers from file Format 'hostname;community'
-   --match|m - - Match regular expression in Alcatel Service-Name  / Service description / port description
+   --match|m - - Regular expression to Match'
+   --ports|p - - Search for ports ( description )'
+   --service|s - - Search for service ( servicelongname / servcieshortname )'
+   --help|h - - This help'
    --version|V - Version
 ";
    exit(0);
@@ -216,13 +228,6 @@ if (defined($hostnamearg) && !defined($communityarg)) {
 	exit(1);
 }
 
-if (!defined($matcharg)) { 
-	$match = qr/.+/;
-} else {
-	$match = qr/$matcharg/;
-}
-
-
 if (!defined($routerfile)) {
 	$routerfile="/tmp/".basename($0).".$$";
 	&write_out($routerfile,"$hostnamearg;$communityarg");
@@ -233,11 +238,10 @@ if (!open(FD,"<".$routerfile)) {
 	exit(1);
 }
 
-while (<FD>) {
-	%int=();
-	%intports=();
-	@psslist=();
+my @ports;
+my @svc;
 
+while (<FD>) {
 	if (m/^(\S+);(\S+)\s*$/) {
 		$hostname=$1;
 		$community=$2;
@@ -246,50 +250,58 @@ while (<FD>) {
 		print STDERR "Wrong Line : ".$_;
 		next;
 	}
-	&write_out("./".$hostname.".ports","Host;Port;ifDescr");
-	&write_out("./".$hostname.".svc","Host;srvid;sap;port;servicetype;servicelongname;serviceshortname");
 
 	my $sess=&snmp_session($hostname,$community,'snmpv2c');
+	my $alu=&alu_check($sess);
+
+	if (!$alu) {
+		print "WARNING: $hostname is not TiMOS ( Alcatel-Lucent OS) !!!"
+	}
+
 	my $ifdescr=&removebase(&my_walk($sess,IFDESCR),IFDESCR);
 	my $ifname=&removebase(&my_walk($sess,IFNAME),IFNAME);
+	my $iftype=&removebase(&my_walk($sess,IFTYPE),IFTYPE);
 	my $ifalias=&removebase(&my_walk($sess,IFALIAS),IFALIAS);
-	my $servlongname=&removebase(&my_walk($sess,SERVLONGNAME),SERVLONGNAME);
-	my $servname=&removebase(&my_walk($sess,SERVNAME),SERVNAME);
-	my $servtype=&removebase(&my_walk($sess,SERVTYPE),SERVTYPE);
-	my $saplist=&removebase(&my_walk($sess,SAPLIST),SAPLIST);
+	my $servlongname = {};
+	my $servname = {};
+	my $servtype = {};
+	my $saplist = {};
+	my $sdplist = {};
+	my $sdpbindtype = {};
+ 
+	if ($alu) {
+		$servlongname=&removebase(&my_walk($sess,SERVLONGNAME),SERVLONGNAME);
+		$servname=&removebase(&my_walk($sess,SERVNAME),SERVNAME);
+		$servtype=&removebase(&my_walk($sess,SERVTYPE),SERVTYPE);
+		$saplist=&removebase(&my_walk($sess,SAPLIST),SAPLIST);
+		$sdplist=&removebase(&my_walk($sess,SDPLIST),SDPLIST);
+		$sdpbindtype=&removebase(&my_walk($sess,SDPBINDTYPE),SDPBINDTYPE);
+	}
+
 	my $s;
-	
 	#porty
 	foreach $s (keys(%{$ifname})) {
-		next unless ($ifdescr->{$s}=~m/$match/);
-		$portid=$ifname->{$s};
-		$hintports->{$portid}=$ifdescr->{$s};
-		push(@psslist,$portid);
+		next unless ($ifdescr->{$s}=~m/$match/i);
+		push(@ports,new AluPorts($s,$iftype->{$s},$ifdescr->{$s},$ifname->{$s},$ifalias->{$s}));
 	}
-	
-	#serwisy
+
+	#services / long name
 	foreach $s (keys(%{$servlongname})) {
-		next unless ($servlongname->{$s}=~m/$match/);
-		&add_service($hint,$s,$servlongname,$servname,$servtype);
+		next unless ($servlongname->{$s}=~m/$match/i);
+		push(@svc,new AluSVC($s,$servtype->{$s},$servlongname->{$s},$servname->{$s}));
 	}
-	#$serwisy
+	# short name
 	foreach $s (keys(%{$servname})) {
-		next unless ($servname->{$s}=~m/$match/);
-		&add_service($hint,$s,$servlongname,$servname,$servtype);
+		next unless ($servname->{$s}=~m/$match/i);
+		my $n=&AluSVC::find_svc(\@svc,$s);
+		push(@svc,new AluSVC($s,$servtype->{$s},$servlongname->{$s},$servname->{$s})) unless ($n);
 	}
-	
-	##sap-y
+#	##sap-y
 	foreach $s (keys(%{$saplist})) {
 		my @saps=split(/\./,$s);
 		my $port;
 	
-		if (defined($ifname->{$saps[1]})) {
-			$port=$ifname->{$saps[1]};
-		} else {
-			print STDERR $hostname." : ERR: Brak mapowania IF-NAME dla ".$saps[1]."\n";
-			next;
-		}
-	
+		$port=$ifname->{$saps[1]};
 		my $sap;
 		my $vlan=&conv32vlantodot($saps[2]);
 		#Null
@@ -302,36 +314,53 @@ while (<FD>) {
 		#dot1q/qinq
 			$sap=$port.":".$vlan;
 		}
-	
-		if ( &in_array($hpsslist,$port)) {
-			push(@{$hint->{$saps[0]}->{'sap'}},$sap) unless (&in_array($hint->{$saps[0]}->{'sap'},$sap));
-			&add_service($hint,$saps[0],$servlongname,$servname,$servtype);
+
+		foreach my $c (@svc) {
+			next if ($c->get_id()!=$saps[0]);
+			$c->add_sap($sap);
 		}
-		
-		if (exists($hint->{$saps[0]})) {
-			push(@{$hint->{$saps[0]}->{'sap'}},$sap) unless (&in_array($hint->{$saps[0]}->{'sap'},$sap));
+
+		#Check if SAP is on Phisical Interface that we 
+		#added to @ports if so add all services on this port
+		#
+		foreach my $p (@ports) {
+			next if ($p->get_id()!=$saps[1]);		
+			#
+			my $n=&AluSVC::find_svc(\@svc,$saps[0]);
+			if (!$n) {
+				push(@svc,new AluSVC($saps[0],$servtype->{$saps[0]},$servlongname->{$saps[0]},$servname->{$saps[0]}));
+				$svc[scalar(@svc)-1]->add_sap($sap);
+			}
 		}
+
 	}
-	
 
+#### spoke/mesh-sdp
+	foreach $s (keys(%{$sdplist})) {
+		my $type='unknown';
+		my @sdp=split(/\./,$s);
+		my $sdpid=pow(2,24)*$sdp[1]+pow(2,16)*$sdp[2]+pow(2,8)*$sdp[3]+$sdp[4];
+		my $vcid=pow(2,24)*$sdp[5]+pow(2,16)*$sdp[6]+pow(2,8)*$sdp[7]+$sdp[8];
+		if (exists($sdpbindtype->{$s})) {
+			$type=$sdptypes{$sdpbindtype->{$s}};
+		} 
 
-	foreach my $p (keys(%{$hintports})) {
-		&write_out("./".$hostname.".ports", $hostname.";".$p.";".$hintports->{$p});
-	}
-
-	foreach my $h (keys(%{$hint})) {
-		$servicetype=defined($hint->{$h}->{'servicetype'})?$hint->{$h}->{'servicetype'}:'';
-		$servicelongname=defined($hint->{$h}->{'servicelongname'})?$hint->{$h}->{'servicelongname'}:'';
-		$serviceshortname=defined($hint->{$h}->{'serviceshortname'})?$hint->{$h}->{'serviceshortname'}:'';
-		if (defined($hint->{$h}->{'sap'})) {
-			$saplist=join(',',@{$hint->{$h}->{'sap'}});
-		} else {
-			$saplist="";
+		foreach my $c (@svc) {
+			next if ($c->get_id()!=$sdp[0]);
+			$c->add_sdp($sdpid.":".$vcid,$type);
 		}
-	
-		&write_out("./".$hostname.".svc", $hostname.";".$h.";".$saplist.";".$servicetype.";".$servicelongname.";".$serviceshortname);
 	}
 	$sess->close;
+
+       &write_out("./".$hostname.".ports","Port;ifDescr;ifAlias;Type");
+       foreach my $p (sort { $a->get_id() <=> $b->get_id() } @{&AluPorts::get_ethphys_ifaces(\@ports)}) {
+		&write_out("./".$hostname.".ports",$p->csv());
+	}
+       &write_out("./".$hostname.".svc","srvid;servicetype;sap;sdp;servicelongname;serviceshortname");
+	foreach my $s (sort { $a->get_id() <=> $b->get_id() } @svc) {
+		&write_out("./".$hostname.".svc",$s->csv());
+	}
+
 }
 
 close(FD);
