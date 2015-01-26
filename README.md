@@ -1,0 +1,10 @@
+
+
+7750 SR7/SR12:
+        TiMOS-C-11.0.R2
+
+5210 SAS-M:
+	TiMOS-B-4.0.R7
+	TiMOS-B-5.0.R7
+	
+
