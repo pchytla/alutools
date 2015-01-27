@@ -1,5 +1,6 @@
 package AluSAP;
 use strict;
+use Utils qw( in_array );
 
 sub new {
 	my $class = shift;
@@ -10,7 +11,7 @@ sub new {
 sub add_sap {
 	my $self=shift;
 	my $sap=shift;
-	if ($self->{'saplist'} ~~ $sap) {
+	if (&in_array($self->{'saplist'},$sap)) {
 			return 0;
 	}
 

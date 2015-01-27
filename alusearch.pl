@@ -44,7 +44,7 @@ use constant SDPBINDTYPE => '.1.3.6.1.4.1.6527.3.1.2.4.4.4.1.10';
 my $hostnamearg;
 my $communityarg;
 my $routerfile;
-my $match = qr/.+/;
+my $match;
 my $help;
 my $version;
 my $outfile;
@@ -218,6 +218,10 @@ if( $help ) {
 if (defined($version)) { 
 	print "$0 version ".VERSION."\n";
 	exit(0);
+}
+
+if (!defined($match)) {
+	$match = qr/.+/;
 }
 
 if (!defined($routerfile) && !defined($hostnamearg)) {

@@ -7,7 +7,7 @@ require Exporter;
 our @ISA = qw(Exporter);
 
 our @EXPORT_OK = qw ( 
-        get_phys_ifaces
+        get_ethphys_ifaces
 );
 
 our @EXPORT = qw(
@@ -330,7 +330,7 @@ sub get_ethphys_ifaces {
         die("get_ethphys_ifaces() argument \$arr not ARRAY ref") if (ref($arr) ne 'ARRAY');
 
 	foreach my $a (@{$arr}) {
-		push(@ret,$a) if (&in_array(@eth_iftypes,$a->{'iftype'}));
+		push(@ret,$a) if (&in_array(\@eth_iftypes,$a->{'iftype'}));
 	}
 
 	return \@ret;
