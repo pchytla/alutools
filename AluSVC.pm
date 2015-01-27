@@ -106,8 +106,8 @@ sub csv {
 
 #
 #  Returns :
-#	0 - Not found in array
-#       
+#	undef - not found in array       
+# 	0..X - found
 #
 sub find_svc() {
 	my $arr = shift;
@@ -119,7 +119,7 @@ sub find_svc() {
 		return $i if ($arr->[$i]->get_id()==$id);
 	}
 
-	return 0;
+	return undef;
 }
 
 1;

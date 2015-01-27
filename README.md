@@ -39,11 +39,13 @@ Tested
 	TiMOS-C-8.0.R6
         TiMOS-C-11.0.R2
 
-5210 SAS-M:
+7210 SAS-M:
 	TiMOS-B-3.0.R10
 	TiMOS-B-4.0.R7
 	TiMOS-B-5.0.R7
-	
+
+7210 SAS-D:
+	TiMOS-B-4.0.R7
 
 AUTHOR
 ==========

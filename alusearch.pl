@@ -49,8 +49,7 @@ my $help;
 my $version;
 my $outfile;
 my $ports;
-my $service;
-
+my $services;
 
 ## {{
 
@@ -192,13 +191,35 @@ sub write_out()
 }
 
 
+sub write_services() 
+{
+		my $hostnae=shift;
+		my $svc=shift;
+
+       		&write_out("./".$hostname.".svc","srvid;servicetype;sap;sdp;servicelongname;serviceshortname");
+		foreach my $s (sort { $a->get_id() <=> $b->get_id() } @{$svc}) {
+				&write_out("./".$hostname.".svc",$s->csv());
+		}
+}
+
+sub write_ports()
+{
+	my $hostname=shift;
+	my $ports=shift;
+	&write_out("./".$hostname.".ports","Port;ifDescr;ifAlias;Type");
+       	foreach my $p (sort { $a->get_id() <=> $b->get_id() } @{&AluPorts::get_ethphys_ifaces($ports)}) {
+			&write_out("./".$hostname.".ports",$p->csv());
+	}
+
+}
+
 die("Wrong args") unless GetOptions( 'hostname|n=s' => \$hostnamearg, 
 					'community|C=s' => \$communityarg, 
 					'routerfile|r=s' => \$routerfile, 
 					'version|V' => \$version, 
 					'match|m=s' => \$match ,
-					'ports|p' => \$searchports ,
-					'services|s' => \$searchports ,
+					'ports|p' => \$ports ,
+					'services|s' => \$services ,
 					'help|h' => \$help ,
 				);
 if( $help ) {
@@ -215,14 +236,25 @@ if( $help ) {
    exit(0);
 }
 
+
 if (defined($version)) { 
 	print "$0 version ".VERSION."\n";
 	exit(0);
 }
 
-if (!defined($match)) {
-	$match = qr/.+/;
+if (!defined($ports) && !defined($services)){
+                $ports=1;
+                $services=1;
 }
+
+$ports=0 unless(defined($ports));
+$services=0 unless(defined($services));
+
+
+if (!defined($match)) {
+	$match = qr/.*/;
+}
+
 
 if (!defined($routerfile) && !defined($hostnamearg)) {
 	print "routefile or hostname must be set\n";
@@ -257,6 +289,17 @@ while (<FD>) {
 		next;
 	}
 
+	my $servlongname = {};
+	my $servname = {};
+	my $servtype = {};
+	my $saplist = {};
+	my $sdplist = {};
+	my $sdpbindtype = {};
+	my $ifdescr = {} ; 
+	my $ifname= {}; 
+	my $iftype= {} ; 
+	my $ifalias= {} ;
+
 	my $sess=&snmp_session($hostname,$community,'snmpv2c');
 	my $alu=&alu_check($sess);
 
@@ -269,43 +312,47 @@ while (<FD>) {
 		print "WARNING: $hostname is not TiMOS ( Alcatel-Lucent OS) !!!\n"
 	}
 
-	my $ifdescr=&removebase(&my_walk($sess,IFDESCR),IFDESCR);
-	my $ifname=&removebase(&my_walk($sess,IFNAME),IFNAME);
-	my $iftype=&removebase(&my_walk($sess,IFTYPE),IFTYPE);
-	my $ifalias=&removebase(&my_walk($sess,IFALIAS),IFALIAS);
-	my $servlongname = {};
-	my $servname = {};
-	my $servtype = {};
-	my $saplist = {};
-	my $sdplist = {};
-	my $sdpbindtype = {};
- 
-	if ($alu) {
+	$ifname=&removebase(&my_walk($sess,IFNAME),IFNAME);
+
+	if ($ports) {
+		$ifdescr=&removebase(&my_walk($sess,IFDESCR),IFDESCR);
+		$iftype=&removebase(&my_walk($sess,IFTYPE),IFTYPE);
+		$ifalias=&removebase(&my_walk($sess,IFALIAS),IFALIAS);
+	
+		my $s;
+		#porty
+		foreach $s (keys(%{$ifname})) {
+			next unless ($ifdescr->{$s}=~m/$match/i);
+			push(@ports,new AluPorts($s,$iftype->{$s},$ifdescr->{$s},$ifname->{$s},$ifalias->{$s}));
+		}
+	
+		&write_ports($hostname,\@ports);
+	}
+
+
+	if ($services) {
 		$servlongname=&removebase(&my_walk($sess,SERVLONGNAME),SERVLONGNAME);
 		$servname=&removebase(&my_walk($sess,SERVNAME),SERVNAME);
 		$servtype=&removebase(&my_walk($sess,SERVTYPE),SERVTYPE);
 		$saplist=&removebase(&my_walk($sess,SAPLIST),SAPLIST);
 		$sdplist=&removebase(&my_walk($sess,SDPLIST),SDPLIST);
 		$sdpbindtype=&removebase(&my_walk($sess,SDPBINDTYPE),SDPBINDTYPE);
-	}
-
-	my $s;
-	#porty
-	foreach $s (keys(%{$ifname})) {
-		next unless ($ifdescr->{$s}=~m/$match/i);
-		push(@ports,new AluPorts($s,$iftype->{$s},$ifdescr->{$s},$ifname->{$s},$ifalias->{$s}));
+	} else {
+		$sess->close();
+		next;
 	}
 
 	#services / long name
 	foreach $s (keys(%{$servlongname})) {
 		next unless ($servlongname->{$s}=~m/$match/i);
-		push(@svc,new AluSVC($s,$servtype->{$s},$servlongname->{$s},$servname->{$s}));
+		my $n=&AluSVC::find_svc(\@svc,$s);
+		push(@svc,new AluSVC($s,$servtype->{$s},$servlongname->{$s},$servname->{$s})) unless (defined($n));
 	}
 	# short name
 	foreach $s (keys(%{$servname})) {
 		next unless ($servname->{$s}=~m/$match/i);
 		my $n=&AluSVC::find_svc(\@svc,$s);
-		push(@svc,new AluSVC($s,$servtype->{$s},$servlongname->{$s},$servname->{$s})) unless ($n);
+		push(@svc,new AluSVC($s,$servtype->{$s},$servlongname->{$s},$servname->{$s})) unless (defined($n));
 	}
 #	##sap-y
 	foreach $s (keys(%{$saplist})) {
@@ -318,10 +365,9 @@ while (<FD>) {
 		#Null
 		if ($vlan==0) {
 			$sap=$port;
-		#:* gwiazdka
-		} elsif ($vlan==4095) {
-			$sap=$port.":*";
 		} else {
+		#sap:* - dot1/qinq encap
+			$vlan=~s/4095/\*/;
 		#dot1q/qinq
 			$sap=$port.":".$vlan;
 		}
@@ -338,7 +384,7 @@ while (<FD>) {
 			next if ($p->get_id()!=$saps[1]);		
 			#
 			my $n=&AluSVC::find_svc(\@svc,$saps[0]);
-			if (!$n) {
+			if (!defined($n)) {
 				push(@svc,new AluSVC($saps[0],$servtype->{$saps[0]},$servlongname->{$saps[0]},$servname->{$saps[0]}));
 				$svc[scalar(@svc)-1]->add_sap($sap);
 			}
@@ -362,15 +408,8 @@ while (<FD>) {
 		}
 	}
 	$sess->close;
-
-       &write_out("./".$hostname.".ports","Port;ifDescr;ifAlias;Type");
-       foreach my $p (sort { $a->get_id() <=> $b->get_id() } @{&AluPorts::get_ethphys_ifaces(\@ports)}) {
-		&write_out("./".$hostname.".ports",$p->csv());
-	}
-       &write_out("./".$hostname.".svc","srvid;servicetype;sap;sdp;servicelongname;serviceshortname");
-	foreach my $s (sort { $a->get_id() <=> $b->get_id() } @svc) {
-		&write_out("./".$hostname.".svc",$s->csv());
-	}
+	
+	&write_services($hostname,\@svc);
 
 }
 
