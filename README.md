@@ -35,8 +35,10 @@ alusearch Examples
 
 isisdiscovery  
 =================
- 	Intermediate System to Intermediate System (IS-IS) routing protoocol discovery (isisdiscovery) creates topology graph based 
-	on ISIS adjacency. It walk by all your ALU switches / routers with active ISIS and discovers networks connections.
+ 	Intermediate System to Intermediate System (IS-IS) routing protoocol  
+	discovery (isisdiscovery) creates topology graph based on ISIS adjacency. 
+	It walk by all your ALU switches / routers with active ISIS and discovers 
+	networks connections.
 
 **Step by step**
  * 1) Resolve start node to IP
@@ -69,11 +71,11 @@ isisdiscovery
 community file
 ===============
 Community file is list of possible snmp communites that can be found in network .
-For example if you are using some random string as  community per one device you must add all devices to community file - exact matching
+For example if you are using some random string as  community per one device you must add all devices to community file - exact matching  
 Also matching based on regular expresion :
-	-  All switches that name is matching  sw\S.bar have community 'community5' 
-	-  all routers that name is matching rtr\S+.foo have comminity 'community4' 
-	-  '-C' option can also be single snmp community as string
+ *  All switches that name is matching  sw\S.bar have community 'community5' 
+ *  all routers that name is matching rtr\S+.foo have comminity 'community4' 
+ * '-C' option can also be single snmp community as string
 
 **Example:**  
 node1;community1  
