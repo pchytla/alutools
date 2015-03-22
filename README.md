@@ -72,11 +72,11 @@ Also matching based on regular expresion :
 	-  all routers that name is matching rtr\S+.foo have comminity 'community4' 
 	-  '-C' option can also be single snmp community as string
 
-**Example:**
+**Example:** 
 node1;community1  
 node2;community2  
 node3;community3  
-rtr\S+\.foo;community4 
+rtr\S+\.foo;community4  
 sw\S+\.bar;commnity5 
 
 geofile
@@ -88,14 +88,15 @@ REGEX extracts data for matching :
 	        -  cities names 
 		-  country 
 
-**Format:**
-REGEX : [perl regular expession]
-FOO;[longitude wgs84];[latitude wgs84]
+**Format:**  
+REGEX : [perl regular expession]  
+FOO;[longitude wgs84];[latitude wgs84]  
 
-Example:
-REGEX : \.(\w{4})$
-FOO;26.1444108980615;60.133457029194
-BAR;19.2045975882404;80.0811616912229
+
+**Example:**
+REGEX : \.(\w{4})$  
+FOO;26.1444108980615;60.133457029194  
+BAR;19.2045975882404;80.0811616912229  
 
 isisdiscovery examples
 ======================
