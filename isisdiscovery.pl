@@ -648,6 +648,8 @@ if ($startip eq "" ) {
 $SIG{'INT'}=\&sig_handler;
 $SIG{'QUIT'}=\&sig_handler;
 
+push(@all,$hostname);
+
 while (1)
 {
 	if (scalar(@all)==0) {
