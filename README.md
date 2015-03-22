@@ -72,12 +72,12 @@ Also matching based on regular expresion :
 	-  all routers that name is matching rtr\S+.foo have comminity 'community4' 
 	-  '-C' option can also be single snmp community as string
 
-Example:
-node1;community1
-node2;community2
-node3;community3
-rtr\S+\.foo;community4
-sw\S+\.bar;commnity5
+Example: 
+node1;community1 
+node2;community2 
+node3;community3 
+rtr\S+\.foo;community4 
+sw\S+\.bar;commnity5 
 
 geofile
 ====================
