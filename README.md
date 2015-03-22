@@ -38,21 +38,21 @@ isisdiscovery
  	Intermediate System to Intermediate System (IS-IS) routing protoocol discovery (isisdiscovery) creates topology graph based 
 	on ISIS adjacency. It walk by all your ALU switches / routers with active ISIS and discovers networks connections.
 
-          **Step by step**
-		* 1) Resolve start node to IP
-		* 2) Push start node to QUEUE
-		* 2) ON node:
-			- if QUEUE is empty then exit loop
-			- pops node from QUEUE
-			- find node SNMP community 
-			- gets all neighoring systems , push to @cur_hosts
-			- For all nodes in @cur_hosts gets metric from isis route table ( route do start node IP /32 )
-			- Sort QUEUE based on metric
-			- goto 2:
-		* 4) Dump network topology to network.json
-	        * 5) Convert json to graphml 
+**Step by step**
+	* 1) Resolve start node to IP
+	* 2) Push start node to QUEUE
+	* 2) ON node:
+		* if QUEUE is empty then exit loop
+		* pops node from QUEUE
+		* find node SNMP community 
+		* gets all neighoring systems , push to @cur_hosts
+		* For all nodes in @cur_hosts gets metric from isis route table ( route do start node IP /32 )
+		* Sort QUEUE based on metric
+		* goto 2:
+	* 4) Dump network topology to network.json
+	* 5) Convert json to graphml 
 		   ./jsont_to_graphml network.json > network.graphml - json_to_graphml moves IP/Netmask/Interface names to graphml edge attributes 
-		* 6) Visualize graphml with Guess or cytoscape
+	* 6) Visualize graphml with Guess or cytoscape
 	
 	[Guess](http://graphexploration.cond.org/) 
 			- Layout /  GEM 
