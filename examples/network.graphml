@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns
+        http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">
+  <key id="sysdescr" for="node" attr.name="sysdescr" attr.type="string">
+    <default></default>
+  </key>
+  <key id="ips" for="edge" attr.name="ips" attr.type="string">
+    <default></default>
+  </key>
+  <key id="netmask" for="edge" attr.name="netmask" attr.type="string">
+    <default></default>
+  </key>
+  <key id="interfaces" for="edge" attr.name="interfaces" attr.type="string">
+    <default></default>
+  </key>
+  <key id="isislevel" for="edge" attr.name="isislevel" attr.type="string">
+    <default></default>
+  </key>
+  <key id="color" for="edge" attr.name="color" attr.type="string">
+    <default>yellow</default>
+   </key>
+  <key id="color" for="node" attr.name="color" attr.type="string">
+    <default>yellow</default>
+   </key>
+  <key id="label" for="edge" attr.name="label" attr.type="string">
+    <default>yellow</default>
+   </key>
+  <key id="label" for="node" attr.name="label" attr.type="string">
+    <default>yellow</default>
+   </key>
+<graph id="ISIS" edgedefault="undirected">
+   <node id="rtr-2.core">
+	<data key="sysdescr"> TiMOS-C-11.0.R2 cpm/hops ALCATEL SR 7750 Copyright (c) 2000-2013 Alcatel-Lucent.  All rights reserved. All use subject to applicable license agreements.  Built on Wed Apr 3 13:28:41 PDT 2013 by builder in /rel11.0/b1/R2/panos/main   </data>
+	<data key="label"> rtr-2.core </data>
+	
+    </node>
+   <node id="sw-5.core">
+	<data key="sysdescr"> TiMOS-B-5.0.R7 both/mpc ALCATEL SAS-M 24F 2XFP 7210 Copyright (c) 2000-2013 Alcatel-Lucent.  All rights reserved. All use subject to applicable license agreements.  Built on Fri Jul 19 10:50:12 IST 2013 by builder in /home/builder/5.0B1/R7/panos/main   </data>
+	<data key="label"> sw-5.core </data>
+	
+    </node>
+   <node id="rtr-3.core">
+	<data key="sysdescr"> TiMOS-C-11.0.R2 cpm/hops ALCATEL SR 7750 Copyright (c) 2000-2013 Alcatel-Lucent.  All rights reserved. All use subject to applicable license agreements.  Built on Wed Apr 3 13:28:41 PDT 2013 by builder in /rel11.0/b1/R2/panos/main   </data>
+	<data key="label"> rtr-3.core </data>
+	
+    </node>
+   <node id="sw-4.core">
+	<data key="sysdescr"> TiMOS-B-4.0.R8 both/mpc ALCATEL SAS-M 24F 2XFP 7210 Copyright (c) 2000-2011 Alcatel-Lucent.  All rights reserved. All use subject to applicable license agreements.  Built on Fri Nov 30 10:57:04 IST 2012 by builder in /builder/4.0B1/R8/panos/main   </data>
+	<data key="label"> sw-4.core </data>
+	
+    </node>
+   <node id="sw-6.core">
+	<data key="sysdescr"> TiMOS-B-5.0.R7 both/mpc ALCATEL SAS-M 24F 2XFP 7210 Copyright (c) 2000-2013 Alcatel-Lucent.  All rights reserved. All use subject to applicable license agreements.  Built on Fri Jul 19 10:50:12 IST 2013 by builder in /home/builder/5.0B1/R7/panos/main   </data>
+	<data key="label"> sw-6.core </data>
+	
+    </node>
+   <node id="sw-1.core">
+	<data key="sysdescr"> TiMOS-B-5.0.R7 both/mpc ALCATEL SAS-M 24F 2XFP 7210 Copyright (c) 2000-2013 Alcatel-Lucent.  All rights reserved. All use subject to applicable license agreements.  Built on Fri Jul 19 10:50:12 IST 2013 by builder in /home/builder/5.0B1/R7/panos/main   </data>
+	<data key="label"> sw-1.core </data>
+	
+    </node>
+   <node id="sw-2.core">
+	<data key="sysdescr"> TiMOS-B-4.0.R8 both/mpc ALCATEL SAS-M 24F 2XFP 7210 Copyright (c) 2000-2011 Alcatel-Lucent.  All rights reserved. All use subject to applicable license agreements.  Built on Fri Nov 30 10:57:04 IST 2012 by builder in /builder/4.0B1/R8/panos/main   </data>
+	<data key="label"> sw-2.core </data>
+	
+    </node>
+   <node id="sw-7.core">
+	<data key="sysdescr"> TiMOS-B-5.0.R7 both/mpc ALCATEL SAS-M 24F 2XFP 7210 Copyright (c) 2000-2013 Alcatel-Lucent.  All rights reserved. All use subject to applicable license agreements.  Built on Fri Jul 19 10:50:12 IST 2013 by builder in /home/builder/5.0B1/R7/panos/main   </data>
+	<data key="label"> sw-7.core </data>
+	
+    </node>
+   <node id="rtr-1.core">
+	<data key="sysdescr"> TiMOS-C-11.0.R2 cpm/hops ALCATEL SR 7750 Copyright (c) 2000-2013 Alcatel-Lucent.  All rights reserved. All use subject to applicable license agreements.  Built on Wed Apr 3 13:28:41 PDT 2013 by builder in /rel11.0/b1/R2/panos/main   </data>
+	<data key="label"> rtr-1.core </data>
+	
+    </node>
+   <node id="sw-3.core">
+	<data key="sysdescr"> TiMOS-B-4.0.R7 both/mpc ALCATEL SAS-M 24F 2XFP 7210 Copyright (c) 2000-2011 Alcatel-Lucent.  All rights reserved. All use subject to applicable license agreements.  Built on Wed Jul 4 15:58:49 IST 2012 by builder in /builder/4.0B1/R7/panos/main   </data>
+	<data key="label"> sw-3.core </data>
+	
+    </node>
+   <node id="rtr-6.core">
+	<data key="sysdescr"> TiMOS-C-11.0.R2 cpm/hops ALCATEL SR 7750 Copyright (c) 2000-2013 Alcatel-Lucent.  All rights reserved. All use subject to applicable license agreements.  Built on Wed Apr 3 13:28:41 PDT 2013 by builder in /rel11.0/b1/R2/panos/main   </data>
+	<data key="label"> rtr-6.core </data>
+	
+    </node>
+   <node id="rtr-5.core">
+	<data key="sysdescr"> TiMOS-C-11.0.R2 cpm/hops ALCATEL SR 7750 Copyright (c) 2000-2013 Alcatel-Lucent.  All rights reserved. All use subject to applicable license agreements.  Built on Wed Apr 3 13:28:41 PDT 2013 by builder in /rel11.0/b1/R2/panos/main   </data>
+	<data key="label"> rtr-5.core </data>
+	
+    </node>
+   <node id="rtr-4.core">
+	<data key="sysdescr"> TiMOS-C-11.0.R2 cpm/hops ALCATEL SR 7750 Copyright (c) 2000-2013 Alcatel-Lucent.  All rights reserved. All use subject to applicable license agreements.  Built on Wed Apr 3 13:28:41 PDT 2013 by builder in /rel11.0/b1/R2/panos/main   </data>
+	<data key="label"> rtr-4.core </data>
+	
+    </node>
+<edge id="rtr-2.core-rtr-3.core-10.203.0.24/31" source="rtr-2.core" target="rtr-3.core">
+<data key="label">TenGE-1/1/1-TenGE-2/0/5</data>
+<data key="ips">10.203.0.24 10.203.0.25</data>
+<data key="netmask">255.255.255.254 255.255.255.254</data>
+<data key="interfaces">TenGE-1/1/1 TenGE-2/0/5</data>
+<data key="isislevel">level1L2 level1L2</data>
+</edge>
+<edge id="sw-4.core-sw-5.core-10.203.123.0/31" source="sw-4.core" target="sw-5.core">
+<data key="label">TenGE-1/1/25-TenGE-1/1/25</data>
+<data key="ips">10.203.123.0 10.203.123.1</data>
+<data key="netmask">255.255.255.254 255.255.255.254</data>
+<data key="interfaces">TenGE-1/1/25 TenGE-1/1/25</data>
+<data key="isislevel">level1L2 level1L2</data>
+</edge>
+<edge id="sw-4.core-sw-3.core-10.203.123.2/31" source="sw-4.core" target="sw-3.core">
+<data key="label">TenGE-1/2/1-TenGE-1/1/25</data>
+<data key="ips">10.203.123.2 10.203.123.3</data>
+<data key="netmask">255.255.255.254 255.255.255.254</data>
+<data key="interfaces">TenGE-1/2/1 TenGE-1/1/25</data>
+<data key="isislevel">level1L2 level1L2</data>
+</edge>
+<edge id="sw-1.core-sw-2.core-10.202.127.248/31" source="sw-1.core" target="sw-2.core">
+<data key="label">TenGE-1/1/25-TenGE-1/1/25</data>
+<data key="ips">10.202.127.248 10.202.127.249</data>
+<data key="netmask">255.255.255.254 255.255.255.254</data>
+<data key="interfaces">TenGE-1/1/25 TenGE-1/1/25</data>
+<data key="isislevel">level1L2 level1L2</data>
+</edge>
+<edge id="sw-7.core-sw-2.core-10.202.127.246/31" source="sw-7.core" target="sw-2.core">
+<data key="label">TenGE-1/1/25-TenGE-1/1/26</data>
+<data key="ips">10.202.127.246 10.202.127.247</data>
+<data key="netmask">255.255.255.254 255.255.255.254</data>
+<data key="interfaces">TenGE-1/1/25 TenGE-1/1/26</data>
+<data key="isislevel">level1L2 level1L2</data>
+</edge>
+<edge id="sw-7.core-sw-3.core-10.204.124.152/30" source="sw-7.core" target="sw-3.core">
+<data key="label">TenGE-1/1/26-TenGE-1/1/26</data>
+<data key="ips">10.204.124.153 10.204.124.154</data>
+<data key="netmask">255.255.255.252 255.255.255.252</data>
+<data key="interfaces">TenGE-1/1/26 TenGE-1/1/26</data>
+<data key="isislevel">level1L2 level1L2</data>
+</edge>
+<edge id="sw-3.core-sw-6.core-10.202.127.244/31" source="sw-3.core" target="sw-6.core">
+<data key="label">TenGE-1/2/1-TenGE-1/1/25</data>
+<data key="ips">10.202.127.244 10.202.127.245</data>
+<data key="netmask">255.255.255.254 255.255.255.254</data>
+<data key="interfaces">TenGE-1/2/1 TenGE-1/1/25</data>
+<data key="isislevel">level1L2 level1L2</data>
+</edge>
+<edge id="rtr-6.core-rtr-5.core-10.203.0.26/31" source="rtr-6.core" target="rtr-5.core">
+<data key="label">lag-1-lag-1</data>
+<data key="ips">10.203.0.26 10.203.0.27</data>
+<data key="netmask">255.255.255.254 255.255.255.254</data>
+<data key="interfaces">lag-1 lag-1</data>
+<data key="isislevel">level1L2 level1L2</data>
+<data key="color">blue </data>
+</edge>
+<edge id="rtr-1.core-rtr-2.core-10.203.0.30/31" source="rtr-1.core" target="rtr-2.core">
+<data key="label">hundge-3/1/1-hundge-1/1/1</data>
+<data key="ips">10.203.0.30 10.203.0.31</data>
+<data key="netmask">255.255.255.254 255.255.255.254</data>
+<data key="interfaces">hundge-3/1/1 hundge-1/1/1</data>
+<data key="isislevel">level1L2 level1L2</data>
+<data key="color">red </data>
+</edge>
+<edge id="rtr-1.core-rtr-2.core-10.203.0.20/31" source="rtr-1.core" target="rtr-2.core">
+<data key="label">TenGE-1/1/1-TenGE-4/1/1</data>
+<data key="ips">10.203.0.20 10.203.0.21</data>
+<data key="netmask">255.255.255.254 255.255.255.254</data>
+<data key="interfaces">TenGE-1/1/1 TenGE-4/1/1</data>
+<data key="isislevel">level1L2 level1L2</data>
+</edge>
+<edge id="rtr-1.core-rtr-6.core-10.203.0.18/31" source="rtr-1.core" target="rtr-6.core">
+<data key="label">lag-3-lag-2</data>
+<data key="ips">10.203.0.18 10.203.0.19</data>
+<data key="netmask">255.255.255.254 255.255.255.254</data>
+<data key="interfaces">lag-3 lag-2</data>
+<data key="isislevel">level1L2 level1L2</data>
+<data key="color">blue </data>
+</edge>
+<edge id="rtr-1.core-rtr-4.core-10.203.0.22/31" source="rtr-1.core" target="rtr-4.core">
+<data key="label">lag-1-lag-1</data>
+<data key="ips">10.203.0.22 10.203.0.23</data>
+<data key="netmask">255.255.255.254 255.255.255.254</data>
+<data key="interfaces">lag-1 lag-1</data>
+<data key="isislevel">level1L2 level1L2</data>
+<data key="color">blue </data>
+</edge>
+<edge id="rtr-4.core-sw-1.core-10.202.127.252/31" source="rtr-4.core" target="sw-1.core">
+<data key="label">TenGE-1/1/2-TenGE-1/1/26</data>
+<data key="ips">10.202.127.252 10.202.127.253</data>
+<data key="netmask">255.255.255.254 255.255.255.254</data>
+<data key="interfaces">TenGE-1/1/2 TenGE-1/1/26</data>
+<data key="isislevel">level1L2 level1L2</data>
+</edge>
+<edge id="rtr-4.core-rtr-3.core-10.203.0.2/31" source="rtr-4.core" target="rtr-3.core">
+<data key="label">TenGE-4/1/3-TenGE-3/1/2</data>
+<data key="ips">10.203.0.2 10.203.0.3</data>
+<data key="netmask">255.255.255.254 255.255.255.254</data>
+<data key="interfaces">TenGE-4/1/3 TenGE-3/1/2</data>
+<data key="isislevel">level1L2 level1L2</data>
+</edge>
+<edge id="rtr-4.core-sw-7.core-10.202.127.254/31" source="rtr-4.core" target="sw-7.core">
+<data key="label">TenGE-1/1/25-TenGE-1/2/1</data>
+<data key="ips">10.202.127.254 10.202.127.255</data>
+<data key="netmask">255.255.255.254 255.255.255.254</data>
+<data key="interfaces">TenGE-1/1/25 TenGE-1/2/1</data>
+<data key="isislevel">level1L2 level1L2</data>
+</edge>
+<edge id="rtr-4.core-sw-4.core-10.202.127.250/31" source="rtr-4.core" target="sw-4.core">
+<data key="label">TenGE-2/1/1-TenGE-1/1/26</data>
+<data key="ips">10.202.127.250 10.202.127.251</data>
+<data key="netmask">255.255.255.254 255.255.255.254</data>
+<data key="interfaces">TenGE-2/1/1 TenGE-1/1/26</data>
+<data key="isislevel">level1L2 level1L2</data>
+</edge>
+<edge id="rtr-4.core-rtr-5.core-10.203.0.0/31" source="rtr-4.core" target="rtr-5.core">
+<data key="label">TenGE-1/1/1-TenGE-2/1/5</data>
+<data key="ips">10.203.0.0 10.203.0.1</data>
+<data key="netmask">255.255.255.254 255.255.255.254</data>
+<data key="interfaces">TenGE-1/1/1 TenGE-2/1/5</data>
+<data key="isislevel">level1L2 level1L2</data>
+</edge>
+</graph>
+</graphml>

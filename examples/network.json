@@ -1,0 +1,353 @@
+{
+   "edges" : {
+      "sw-4.core" : {
+         "sw-3.core" : {},
+         "sw-5.core" : {}
+      },
+      "sw-3.core" : {
+         "sw-6.core" : {}
+      },
+      "rtr-4.core" : {
+         "sw-4.core" : {},
+         "rtr-3.core" : {},
+         "sw-7.core" : {},
+         "rtr-5.core" : {},
+         "sw-1.core" : {}
+      },
+      "rtr-6.core" : {
+         "rtr-5.core" : {}
+      },
+      "sw-1.core" : {
+         "sw-2.core" : {}
+      },
+      "rtr-2.core" : {
+         "rtr-3.core" : {}
+      },
+      "sw-7.core" : {
+         "sw-3.core" : {},
+         "sw-2.core" : {}
+      },
+      "rtr-1.core" : {
+         "rtr-6.core" : {},
+         "rtr-4.core" : {},
+         "rtr-2.core" : {}
+      }
+   },
+   "nodes" : {
+      "sw-4.core" : {
+         "scanned" : 1,
+         "TenGE-1/1/25" : {
+            "neighbor" : "sw-5.core",
+            "Level" : "level1L2",
+            "Netmask" : "255.255.255.254",
+            "IP" : "10.203.123.0",
+            "ifIndex" : "5"
+         },
+         "TenGE-1/1/26" : {
+            "neighbor" : "rtr-4.core",
+            "Level" : "level1L2",
+            "Netmask" : "255.255.255.254",
+            "IP" : "10.202.127.251",
+            "ifIndex" : "3"
+         },
+         "sysdescr" : "TiMOS-B-4.0.R8 both/mpc ALCATEL SAS-M 24F 2XFP 7210 Copyright (c) 2000-2011 Alcatel-Lucent.  All rights reserved. All use subject to applicable license agreements.  Built on Fri Nov 30 10:57:04 IST 2012 by builder in /builder/4.0B1/R8/panos/main  ",
+         "TenGE-1/2/1" : {
+            "neighbor" : "sw-3.core",
+            "Level" : "level1L2",
+            "Netmask" : "255.255.255.254",
+            "IP" : "10.203.123.2",
+            "ifIndex" : "4"
+         },
+         "metric" : "21",
+         "type" : "ALU_SAS"
+      },
+      "sw-3.core" : {
+         "scanned" : 1,
+         "sysdescr" : "TiMOS-B-4.0.R7 both/mpc ALCATEL SAS-M 24F 2XFP 7210 Copyright (c) 2000-2011 Alcatel-Lucent.  All rights reserved. All use subject to applicable license agreements.  Built on Wed Jul 4 15:58:49 IST 2012 by builder in /builder/4.0B1/R7/panos/main  ",
+         "TenGE-1/1/25" : {
+            "neighbor" : "sw-4.core",
+            "Level" : "level1L2",
+            "Netmask" : "255.255.255.254",
+            "IP" : "10.203.123.3",
+            "ifIndex" : "3"
+         },
+         "metric" : "31",
+         "TenGE-1/1/26" : {
+            "neighbor" : "sw-7.core",
+            "Level" : "level1L2",
+            "Netmask" : "255.255.255.252",
+            "IP" : "10.204.124.154",
+            "ifIndex" : "4"
+         },
+         "type" : "ALU_SAS",
+         "TenGE-1/2/1" : {
+            "neighbor" : "sw-6.core",
+            "Level" : "level1L2",
+            "Netmask" : "255.255.255.254",
+            "IP" : "10.202.127.244",
+            "ifIndex" : "5"
+         }
+      },
+      "rtr-6.core" : {
+         "scanned" : 1,
+         "sysdescr" : "TiMOS-C-11.0.R2 cpm/hops ALCATEL SR 7750 Copyright (c) 2000-2013 Alcatel-Lucent.  All rights reserved. All use subject to applicable license agreements.  Built on Wed Apr 3 13:28:41 PDT 2013 by builder in /rel11.0/b1/R2/panos/main  ",
+         "metric" : "10",
+         "type" : "ALU_RTR",
+         "lag-1" : {
+            "neighbor" : "rtr-5.core",
+            "Level" : "level1L2",
+            "Netmask" : "255.255.255.254",
+            "IP" : "10.203.0.26",
+            "ifIndex" : "3"
+         },
+         "lag-2" : {
+            "neighbor" : "rtr-1.core",
+            "Level" : "level1L2",
+            "Netmask" : "255.255.255.254",
+            "IP" : "10.203.0.19",
+            "ifIndex" : "7"
+         }
+      },
+      "rtr-4.core" : {
+         "sysdescr" : "TiMOS-C-11.0.R2 cpm/hops ALCATEL SR 7750 Copyright (c) 2000-2013 Alcatel-Lucent.  All rights reserved. All use subject to applicable license agreements.  Built on Wed Apr 3 13:28:41 PDT 2013 by builder in /rel11.0/b1/R2/panos/main  ",
+         "TenGE-2/1/1" : {
+            "neighbor" : "sw-4.core",
+            "Level" : "level1L2",
+            "Netmask" : "255.255.255.254",
+            "IP" : "10.202.127.250",
+            "ifIndex" : "46"
+         },
+         "TenGE-1/1/25" : {
+            "neighbor" : "sw-7.core",
+            "Level" : "level1L2",
+            "Netmask" : "255.255.255.254",
+            "IP" : "10.202.127.254",
+            "ifIndex" : "6"
+         },
+         "TenGE-4/1/3" : {
+            "neighbor" : "rtr-3.core",
+            "Level" : "level1L2",
+            "Netmask" : "255.255.255.254",
+            "IP" : "10.203.0.2",
+            "ifIndex" : "24"
+         },
+         "metric" : "11",
+         "scanned" : 1,
+         "lag-1" : {
+            "neighbor" : "rtr-1.core",
+            "Level" : "level1L2",
+            "Netmask" : "255.255.255.254",
+            "IP" : "10.203.0.23",
+            "ifIndex" : "20"
+         },
+         "type" : "ALU_RTR",
+         "TenGE-1/1/2" : {
+            "neighbor" : "sw-1.core",
+            "Level" : "level1L2",
+            "Netmask" : "255.255.255.254",
+            "IP" : "10.202.127.252",
+            "ifIndex" : "2"
+         },
+         "TenGE-1/1/1" : {
+            "neighbor" : "rtr-5.core",
+            "Level" : "level1L2",
+            "Netmask" : "255.255.255.254",
+            "IP" : "10.203.0.0",
+            "ifIndex" : "3"
+         }
+      },
+      "rtr-3.core" : {
+         "scanned" : 1,
+         "sysdescr" : "TiMOS-C-11.0.R2 cpm/hops ALCATEL SR 7750 Copyright (c) 2000-2013 Alcatel-Lucent.  All rights reserved. All use subject to applicable license agreements.  Built on Wed Apr 3 13:28:41 PDT 2013 by builder in /rel11.0/b1/R2/panos/main  ",
+         "TenGE-3/1/2" : {
+            "neighbor" : "rtr-4.core",
+            "Level" : "level1L2",
+            "Netmask" : "255.255.255.254",
+            "IP" : "10.203.0.3",
+            "ifIndex" : "33"
+         },
+         "TenGE-2/0/5" : {
+            "neighbor" : "rtr-2.core",
+            "Level" : "level1L2",
+            "Netmask" : "255.255.255.254",
+            "IP" : "10.203.0.25",
+            "ifIndex" : "36"
+         },
+         "metric" : "20",
+         "type" : "ALU_RTR"
+      },
+      "sw-5.core" : {
+         "scanned" : 1,
+         "sysdescr" : "TiMOS-B-5.0.R7 both/mpc ALCATEL SAS-M 24F 2XFP 7210 Copyright (c) 2000-2013 Alcatel-Lucent.  All rights reserved. All use subject to applicable license agreements.  Built on Fri Jul 19 10:50:12 IST 2013 by builder in /home/builder/5.0B1/R7/panos/main  ",
+         "TenGE-1/1/25" : {
+            "neighbor" : "sw-4.core",
+            "Level" : "level1L2",
+            "Netmask" : "255.255.255.254",
+            "IP" : "10.203.123.1",
+            "ifIndex" : "2"
+         },
+         "metric" : "31",
+         "type" : "ALU_SAS"
+      },
+      "sw-2.core" : {
+         "scanned" : 1,
+         "TenGE-1/1/25" : {
+            "neighbor" : "sw-1.core",
+            "Level" : "level1L2",
+            "Netmask" : "255.255.255.254",
+            "IP" : "10.202.127.249",
+            "ifIndex" : "2"
+         },
+         "sysdescr" : "TiMOS-B-4.0.R8 both/mpc ALCATEL SAS-M 24F 2XFP 7210 Copyright (c) 2000-2011 Alcatel-Lucent.  All rights reserved. All use subject to applicable license agreements.  Built on Fri Nov 30 10:57:04 IST 2012 by builder in /builder/4.0B1/R8/panos/main  ",
+         "metric" : "31",
+         "TenGE-1/1/26" : {
+            "neighbor" : "sw-7.core",
+            "Level" : "level1L2",
+            "Netmask" : "255.255.255.254",
+            "IP" : "10.202.127.247",
+            "ifIndex" : "3"
+         },
+         "type" : "ALU_SAS"
+      },
+      "sw-6.core" : {
+         "scanned" : 1,
+         "sysdescr" : "TiMOS-B-5.0.R7 both/mpc ALCATEL SAS-M 24F 2XFP 7210 Copyright (c) 2000-2013 Alcatel-Lucent.  All rights reserved. All use subject to applicable license agreements.  Built on Fri Jul 19 10:50:12 IST 2013 by builder in /home/builder/5.0B1/R7/panos/main  ",
+         "TenGE-1/1/25" : {
+            "neighbor" : "sw-3.core",
+            "Level" : "level1L2",
+            "Netmask" : "255.255.255.254",
+            "IP" : "10.202.127.245",
+            "ifIndex" : "2"
+         },
+         "metric" : "41",
+         "type" : "ALU_SAS"
+      },
+      "sw-1.core" : {
+         "TenGE-1/1/25" : {
+            "neighbor" : "sw-2.core",
+            "Level" : "level1L2",
+            "Netmask" : "255.255.255.254",
+            "IP" : "10.202.127.248",
+            "ifIndex" : "3"
+         },
+         "scanned" : 1,
+         "sysdescr" : "TiMOS-B-5.0.R7 both/mpc ALCATEL SAS-M 24F 2XFP 7210 Copyright (c) 2000-2013 Alcatel-Lucent.  All rights reserved. All use subject to applicable license agreements.  Built on Fri Jul 19 10:50:12 IST 2013 by builder in /home/builder/5.0B1/R7/panos/main  ",
+         "TenGE-1/1/26" : {
+            "neighbor" : "rtr-4.core",
+            "Level" : "level1L2",
+            "Netmask" : "255.255.255.254",
+            "IP" : "10.202.127.253",
+            "ifIndex" : "2"
+         },
+         "metric" : "21",
+         "type" : "ALU_SAS"
+      },
+      "rtr-5.core" : {
+         "scanned" : 1,
+         "sysdescr" : "TiMOS-C-11.0.R2 cpm/hops ALCATEL SR 7750 Copyright (c) 2000-2013 Alcatel-Lucent.  All rights reserved. All use subject to applicable license agreements.  Built on Wed Apr 3 13:28:41 PDT 2013 by builder in /rel11.0/b1/R2/panos/main  ",
+         "TenGE-2/1/5" : {
+            "neighbor" : "rtr-4.core",
+            "Level" : "level1L2",
+            "Netmask" : "255.255.255.254",
+            "IP" : "10.203.0.1",
+            "ifIndex" : "37"
+         },
+         "lag-1" : {
+            "neighbor" : "rtr-6.core",
+            "Level" : "level1L2",
+            "Netmask" : "255.255.255.254",
+            "IP" : "10.203.0.27",
+            "ifIndex" : "23"
+         },
+         "metric" : "20",
+         "type" : "ALU_RTR"
+      },
+      "rtr-2.core" : {
+         "scanned" : 1,
+         "sysdescr" : "TiMOS-C-11.0.R2 cpm/hops ALCATEL SR 7750 Copyright (c) 2000-2013 Alcatel-Lucent.  All rights reserved. All use subject to applicable license agreements.  Built on Wed Apr 3 13:28:41 PDT 2013 by builder in /rel11.0/b1/R2/panos/main  ",
+         "TenGE-1/1/1" : {
+            "neighbor" : "rtr-3.core",
+            "Level" : "level1L2",
+            "Netmask" : "255.255.255.254",
+            "IP" : "10.203.0.24",
+            "ifIndex" : "29"
+         },
+         "TenGE-4/1/1" : {
+            "neighbor" : "rtr-1.core",
+            "Level" : "level1L2",
+            "Netmask" : "255.255.255.254",
+            "IP" : "10.203.0.21",
+            "ifIndex" : "55"
+         },
+         "metric" : "10",
+         "hundge-1/1/1" : {
+            "neighbor" : "rtr-1.core",
+            "Level" : "level1L2",
+            "Netmask" : "255.255.255.254",
+            "IP" : "10.203.0.31",
+            "ifIndex" : "41"
+         },
+         "type" : "ALU_RTR"
+      },
+      "sw-7.core" : {
+         "TenGE-1/1/25" : {
+            "neighbor" : "sw-2.core",
+            "Level" : "level1L2",
+            "Netmask" : "255.255.255.254",
+            "IP" : "10.202.127.246",
+            "ifIndex" : "4"
+         },
+         "scanned" : 1,
+         "sysdescr" : "TiMOS-B-5.0.R7 both/mpc ALCATEL SAS-M 24F 2XFP 7210 Copyright (c) 2000-2013 Alcatel-Lucent.  All rights reserved. All use subject to applicable license agreements.  Built on Fri Jul 19 10:50:12 IST 2013 by builder in /home/builder/5.0B1/R7/panos/main  ",
+         "TenGE-1/1/26" : {
+            "neighbor" : "sw-3.core",
+            "Level" : "level1L2",
+            "Netmask" : "255.255.255.252",
+            "IP" : "10.204.124.153",
+            "ifIndex" : "7"
+         },
+         "TenGE-1/2/1" : {
+            "neighbor" : "rtr-4.core",
+            "Level" : "level1L2",
+            "Netmask" : "255.255.255.254",
+            "IP" : "10.202.127.255",
+            "ifIndex" : "3"
+         },
+         "metric" : "21",
+         "type" : "ALU_SAS"
+      },
+      "rtr-1.core" : {
+         "scanned" : 1,
+         "hundge-3/1/1" : {
+            "neighbor" : "rtr-2.core",
+            "Level" : "level1L2",
+            "Netmask" : "255.255.255.254",
+            "IP" : "10.203.0.30",
+            "ifIndex" : "142"
+         },
+         "sysdescr" : "TiMOS-C-11.0.R2 cpm/hops ALCATEL SR 7750 Copyright (c) 2000-2013 Alcatel-Lucent.  All rights reserved. All use subject to applicable license agreements.  Built on Wed Apr 3 13:28:41 PDT 2013 by builder in /rel11.0/b1/R2/panos/main  ",
+         "lag-3" : {
+            "neighbor" : "rtr-6.core",
+            "Level" : "level1L2",
+            "Netmask" : "255.255.255.254",
+            "IP" : "10.203.0.18",
+            "ifIndex" : "119"
+         },
+         "lag-1" : {
+            "neighbor" : "rtr-4.core",
+            "Level" : "level1L2",
+            "Netmask" : "255.255.255.254",
+            "IP" : "10.203.0.22",
+            "ifIndex" : "104"
+         },
+         "TenGE-1/1/1" : {
+            "neighbor" : "rtr-2.core",
+            "Level" : "level1L2",
+            "Netmask" : "255.255.255.254",
+            "IP" : "10.203.0.20",
+            "ifIndex" : "108"
+         },
+         "type" : "ALU_RTR"
+      }
+   }
+}
