@@ -8,6 +8,7 @@ our @ISA = qw(Exporter);
 
 our @EXPORT_OK = qw ( 
         get_ethphys_ifaces
+	get_aluporttype
 );
 
 our @EXPORT = qw(
@@ -288,6 +289,39 @@ our %iana_iftypes = (
 		254 => 'capwapWtpVirtualRadio',  ##  WTP Virtual Radio Interface
 );
 
+our %alu_porttypes = (
+		1 => 'network',
+		2 => 'service',
+		3 => 'serviceIes',
+		4 => 'serviceRtdVpls',  #--obsolete
+		5 => 'serviceVprn',
+		6 => 'serviceIesSubscriber',
+		7 => 'serviceIesGroup',
+		8 => 'serviceVprnSubscriber',
+		9 => 'serviceVprnGroup',
+		10 => 'serviceIesRedundant',
+		11 => 'serviceVprnRedundant',
+		12 => 'serviceVpls',
+		13 => 'serviceIesCem',  #--notsupported
+		14 => 'serviceVprnCem',,#--notsupported
+		15 => 'serviceVprnIPsec',
+		16 => 'serviceVprnIPMirror',
+		17 => 'serviceVideo',
+		18 => 'serviceVplsVideo',
+		19 => 'multiHomingPrimary',
+		20 => 'multiHomingSecondary',
+		21 => 'serviceIesTunnel',
+		22 => 'serviceIpReas',
+		23 => 'networkIpReas',
+		24 => 'networkVprn',
+		25 => 'tmsService',
+		26 => 'serviceIesAarp',
+		27 => 'serviceVprnAarp',
+		28 => 'serviceIesAa',
+		29 => 'serviceVprnAa',
+		30 => 'unnumMplsTp',
+);
+
 
 our @eth_iftypes = ( 32, 62, 6, 117, 161 );
 
@@ -317,6 +351,11 @@ sub get_iftype() {
 	my $self=shift;
 	my $type=shift||$self->{'iftype'};
 	return exists($iana_iftypes{$type})?$iana_iftypes{$type}:$iana_iftypes{'1'};
+}
+
+sub  get_aluporttype() { #FIXIT , check $self
+	my $type=shift;
+	return exists($alu_porttypes{$type})?$alu_porttypes{$type}:undef;
 }
 
 sub csv {

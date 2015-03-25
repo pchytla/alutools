@@ -21,10 +21,11 @@ use Getopt::Long;
 use POSIX qw( :math_h strftime );
 use File::Basename;
 use Math::Trig qw( :pi :radial deg2rad );
-use Utils qw( in_array );
+use Utils qw( in_array conv32vlantodot portencap );
+use AluPorts qw( get_aluporttype );
 use JSON;
 use Net::SNMP qw( :snmp :asn1 oid_base_match snmp_dispatcher oid_lex_sort );
-
+sub fix() { return shift; };
 $|=1;
 
 use constant VERSION => '0.5';
@@ -42,6 +43,13 @@ use constant isisISAdjNeighSysID => '.1.3.6.1.3.37.1.5.1.1.5';
 #TIMETRA-ISIS-MIB
 use constant vRtrIsisHostnameTable => '.1.3.6.1.4.1.6527.3.1.2.10.1.4.1.2';
 use constant vRtrIsisRouteMetric => '.1.3.6.1.4.1.6527.3.1.2.10.1.5.1.6';
+use constant vRtrIsisIfLevelOperMetric => '.1.3.6.1.4.1.6527.3.1.2.10.2.2.1.11';
+#Physical port / encap
+use constant vRtrIfName => '.1.3.6.1.4.1.6527.3.1.2.3.4.1.4';
+use constant vRtrIfType => '.1.3.6.1.4.1.6527.3.1.2.3.4.1.3';
+use constant vRtrIfPortID => '.1.3.6.1.4.1.6527.3.1.2.3.4.1.5';
+use constant vRtrIfEncapValue => '.1.3.6.1.4.1.6527.3.1.2.3.4.1.7';
+use constant vRtrIfServiceId => '.1.3.6.1.4.1.6527.3.1.2.3.4.1.37';
 
 my %vRtrIsisISAdjCircLevel = (
          1 => 'level1',
@@ -63,6 +71,7 @@ my %alucommunity = ( );
 my $help;
 my $outfile;
 my $nobulk;
+my $single;
 my $metricsort=1;
 my $metric;
 my $geosort;
@@ -291,6 +300,16 @@ sub route_metric {
 	return exists($topology->{'nodes'}->{$h}->{'metric'})?$topology->{'nodes'}->{$h}->{'metric'}:MAX_ISIS_METRIC-1;
 }
 
+sub push_to_queue() {
+	my $n=shift;
+
+	if (!&in_array(\@all,$n)) {
+		push(@cur_hosts,$n);
+		push(@all,$n);
+	}
+
+}
+
 #shortest distance over the earth’s surface – using the ‘Haversine’ formula.
 #source stackoverlow
 #
@@ -396,7 +415,6 @@ sub isis_discovery
 		return;
 	}
 
-
 	my $sess=&snmp_session($hostname,$community,'snmpv2c');
 	if (!ref($sess) && $sess =~ m/ERR_/) {
 		return $sess;
@@ -426,20 +444,20 @@ sub isis_discovery
 	my $ifname;
 
 	if ($nobulk) {
-		$ifname=&removebase(&my_walk($sess,IFNAME),IFNAME);
 		$isisadjip=&removebase(&my_walk($sess,ISISADJIP),ISISADJIP);
 		$isisadjlevel=&removebase(&my_walk($sess,ISISLEVEL),ISISLEVEL);
 		$sess->translate(['-octetstring'=> 0x0 ]);
 		$isisadjsystemid=&removebase(&my_walk($sess,isisISAdjNeighSysID),isisISAdjNeighSysID);
+		$isisiflevelopermetric=&removebase(&my_walk($sess,vRtrIsisIfLevelOperMetric),vRtrIsisIfLevelOperMetric);
 	} else {
 		$sess->close();
 		undef $sess;
-		$allresults=&my_bulk_walk($hostname,$community,[ ISISADJIP,ISISLEVEL, isisISAdjNeighSysID , IFNAME]);
+		$allresults=&my_bulk_walk($hostname,$community,[ ISISADJIP,ISISLEVEL, isisISAdjNeighSysID , vRtrIsisIfLevelOperMetric]);
 		$isisadjip=&removebase($allresults,ISISADJIP);
 		$isisadjlevel=&removebase($allresults,ISISLEVEL);
 		$isisadjsystemid=&removebase($allresults,isisISAdjNeighSysID);
-		$ifname=&removebase($allresults,IFNAME);
-	
+		$isisiflevelopermetric=&removebase($allresults,vRtrIsisIfLevelOperMetric);
+
 		$sess=&snmp_session($hostname,$community,'snmpv2c');
 		if (!ref($sess) && $sess =~ m/ERR_/) {
 			return $sess;
@@ -467,19 +485,20 @@ sub isis_discovery
 				next;
 			}
 
-			$isisneighname{$oid}=$isishostname->{$isishostnameoid};
-
+			$isisneighname{$oid}=&fix($isishostname->{$isishostnameoid}); 
 
 			if (!exists($isisneighname{$oid})) {
 				print $hostname." ISIS ADJ IP: ".$isisadjip->{$oid}." Level ".$vRtrIsisISAdjCircLevel{$isisadjlevel->{$oid}}." SystemName: Not found  \n";
 				next;
 			}
 
-			my $name=(defined($ifname->{$x[1]}))?$ifname->{$x[1]}:"";
-			if ( $name eq "" ) {
-				print $hostname."Interface not found ".$isisneighname{$oid}." ".$x[1];
-				next;
-			}
+			$ifname=$sess->get_request ( -varbindlist => [ IFNAME.'.'.$x[1] ] );
+			if ( $ifname->{ IFNAME.'.'.$x[1] } eq 'noSuchInstance' ) {
+				print $hostname." Interface not found ".$isisneighname{$oid}." Index: ".$x[1]."\n";
+                                next;
+                        }
+
+			my $name=$ifname->{ IFNAME.'.'.$x[1] };
 
 			print $hostname." ISIS ADJ IP: ".$isisadjip->{$oid}." Level ".$vRtrIsisISAdjCircLevel{$isisadjlevel->{$oid}}." SystemName: ".$isisneighname{$oid}."\n";
 
@@ -494,7 +513,7 @@ sub isis_discovery
 			$topology->{'nodes'}->{$hostname}->{$name}->{'ifIndex'}=$x[1];
 			$topology->{'nodes'}->{$hostname}->{$name}->{'Level'}=$vRtrIsisISAdjCircLevel{$isisadjlevel->{$oid}};
 			$topology->{'nodes'}->{$hostname}->{$name}->{'neighbor'}=$isisneighname{$oid};
-
+			$topology->{'nodes'}->{$hostname}->{$name}->{'metric'}=$isisiflevelopermetric->{$oid};
 			my $arp=&removebase(&my_walk($sess,ipNetToMediaType.".".$x[1]),ipNetToMediaType.".".$x[1]);
 			my @ips;
 			foreach my $ip (keys(%{$arp})) {
@@ -504,11 +523,7 @@ sub isis_discovery
 
 			if (scalar(@ips)>1) {
 				print $hostname." Multi IP on ISIS Interface ".$name." not supported :".join(' ',@ips)."\n";
-				if (!&in_array(\@all,$isisneighname{$oid})) {
-				push(@cur_hosts,$isisneighname{$oid});
-				push(@all,$isisneighname{$oid});
-				}
-
+				&push_to_queue($isisneighname{$oid});
 				next;
 			}
 
@@ -517,19 +532,75 @@ sub isis_discovery
 			$netmask=$sess->get_request ( -varbindlist => [ ipAdEntNetMask.'.'.$ips[0] ] );
 			if ( $netmask->{ ipAdEntNetMask.'.'.$ips[0] } eq 'noSuchInstance' ) {
 				print $hostname." Interface ".$name." Index ".$x[1]." IP: ".$ips[0]." Netmask not found\n";
-				if (!&in_array(\@all,$isisneighname{$oid})) {
-				push(@cur_hosts,$isisneighname{$oid});
-				push(@all,$isisneighname{$oid});
-				}
+				&push_to_queue($isisneighname{$oid});
 				next;
 			}
 
 			$topology->{'nodes'}->{$hostname}->{$name}->{'Netmask'}=$netmask->{ ipAdEntNetMask.'.'.$ips[0] };
 
-			if (!&in_array(\@all,$isisneighname{$oid})) {
-				push(@cur_hosts,$isisneighname{$oid});
-				push(@all,$isisneighname{$oid});
+
+
+			my $vrtrifname=$sess->get_request( -varbindlist => [ vRtrIfName.'.1.'.$x[1] ] );
+			if ( $vrtrifname->{ vRtrIfName.'.1.'.$x[1] } eq 'noSuchInstanse' ) { 
+				print $hostname." Index ".$x[1]." Failed to get vRtrIfName\n";
+				&push_to_queue($isisneighname{$oid});
+				next;
 			}
+
+			if ( $vrtrifname->{ vRtrIfName.'.1.'.$x[1] } ne $name ) { 
+				print $hostname." Interface ".$name." not the same ".$vrtrifname->{ vRtrIfName.'.'.$x[1] }."\n";
+				&push_to_queue($isisneighname{$oid});
+				next;
+			}
+
+			my $vrtriftype=$sess->get_request( -varbindlist => [ vRtrIfType.'.1.'.$x[1] ] );
+			if ( $vrtriftype->{ vRtrIfType.'.1.'.$x[1] } eq 'noSuchInstanse' ) { 
+				print $hostname." Index ".$x[1]." Failed to get vRtrIfType\n";
+				&push_to_queue($isisneighname{$oid});
+				next;
+			}
+
+			my $vrtrifportid = $sess->get_request( -varbindlist => [ vRtrIfPortID.'.1.'.$x[1] ] );
+			if ( $vrtrifportid->{ vRtrIfPortID.'.1.'.$x[1] } eq 'noSuchInstanse' ) { 
+				print $hostname." Index ".$x[1]." Failed to get vRtrIfPortID\n";
+				&push_to_queue($isisneighname{$oid});
+				next;
+			}
+			my $ifportid=$vrtrifportid->{ vRtrIfPortID.'.1.'.$x[1] };
+
+			my $vrtrifencapvalue = $sess->get_request( -varbindlist => [ vRtrIfEncapValue.'.1.'.$x[1] ] );
+			if ( $vrtrifencapvalue->{ vRtrIfEncapValue.'.1.'.$x[1] } eq 'noSuchInstanse' ) { 
+				print $hostname." Index ".$x[1]." Failed to get vRtrIfEncapValue\n";
+				&push_to_queue($isisneighname{$oid});
+				next;
+			}
+
+                        $ifname=$sess->get_request ( -varbindlist => [ IFNAME.'.'.$ifportid ] );
+                        if ( $ifname->{ IFNAME.'.'.$ifportid }  eq 'noSuchInstance' ) {
+                                print $hostname." Interface not found ".$isisneighname{$oid}." Index: ".$ifportid."\n";
+				&push_to_queue($isisneighname{$oid});
+                                next;
+                        }
+
+                        my $physiface=$ifname->{ IFNAME.'.'.$ifportid };
+
+			my $vrtrifsvcid = $sess->get_request( -varbindlist => [ vRtrIfServiceId.'.1.'.$x[1] ] );
+			if ( $vrtrifsvcid->{ vRtrIfServiceId.'.1.'.$x[1] } eq 'noSuchInstanse' ) { 
+				print $hostname." Index ".$x[1]." Failed to get vRtrIfServiceId\n";
+				&push_to_queue($isisneighname{$oid});
+				next;
+			}
+
+			if ( $vrtriftype->{ vRtrIfType.'.1.'.$x[1] } ne '1' ) {  
+				$topology->{'nodes'}->{$hostname}->{$name}->{'SAP'}=&portencap($physiface,&conv32vlantodot($vrtrifencapvalue->{ vRtrIfEncapValue.'.1.'.$x[1] }));
+				$topology->{'nodes'}->{$hostname}->{$name}->{'svcid'}=$vrtrifsvcid-> { vRtrIfServiceId.'.1.'.$x[1] };
+				$topology->{'nodes'}->{$hostname}->{$name}->{'AluType'}=&get_aluporttype($vrtriftype->{ vRtrIfType.'.1.'.$x[1] });
+			} else {
+				$topology->{'nodes'}->{$hostname}->{$name}->{'Port'}=&portencap($physiface,$vrtrifencapvalue->{ vRtrIfEncapValue.'.1.'.$x[1] });
+				$topology->{'nodes'}->{$hostname}->{$name}->{'AluType'}=&get_aluporttype($vrtriftype->{ vRtrIfType.'.1.'.$x[1] });
+			}
+
+			&push_to_queue($isisneighname{$oid});
 	}
 
 	$sess->close();
@@ -543,6 +614,7 @@ sub isis_discovery
 die("Wrong args") unless GetOptions( 'hostname|n=s' => \$hostname, 
 					'community|C=s' => \$community,
 					'output|O=s' => \$output,
+					'single|s' => \$single,
 					'nobulk|b' => \$nobulk,
 					'metric|m' => \$metricsort,
 					'geo|g'	 => \$geosort,
@@ -557,6 +629,7 @@ $0 - Intermediate System to Intermediate System (IS-IS) routing protoocol discov
    --hostname|n -- start from this node
    --communiy|C -- SNMP Community / single or match file
    --output|O -- output file (default network.json)
+   --single|s -- single host
   SNMP:
    --nobulk|b -- Do no use bulk snmp
   Sorting options:
@@ -610,6 +683,7 @@ if ($geosort) {
 	}
 	while (<FILE>) {
 		next if (m/^#/);
+		s/ //g;
 		my @x=split(':'); 
 		if ($x[0] eq 'REGEX') {
 			chomp($x[1]);
@@ -671,8 +745,8 @@ while (1)
 		$topology->{'nodes'}->{$h}->{'nonalu'}=1;
        		}
 	}
-
-	&get_isis_route_metric($h,$community) if ($metricsort);
+	last if ( $single ) ;
+	&get_isis_route_metric($h,$community) if (!$geosort);
 	@nall=sort {  &$metric($b) <=> &$metric($a) }   @all;
 	@all=@nall;
 }

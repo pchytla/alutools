@@ -1,22 +1,4 @@
-#!/usr/bin/perl -w
-#
-## Copyright (C) 2015 Piotr Chytla <pch@packetconsulting.pl>
-##
-## This program is free software; you can redistribute it and/or modify
-## it under the terms of the GNU General Public License as published by
-## the Free Software Foundation; either version 2 of the License, or
-## (at your option) any later version.
-##
-## This program is distributed in the hope that it will be useful,
-## but WITHOUT ANY WARRANTY; without even the implied warranty of
-## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-## GNU General Public License for more details.
-##
-## You should have received a copy of the GNU General Public License
-## along with this program; if not, write to the Free Software
-## Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-#
-
+#!/opt/local/bin/perl -w
 use strict;
 use warnings;
 use JSON;
@@ -127,7 +109,16 @@ print <<__EOF__;
   <key id="interfaces" for="edge" attr.name="interfaces" attr.type="string">
     <default></default>
   </key>
+  <key id="alutypes" for="edge" attr.name="alutypes" attr.type="string">
+    <default></default>
+  </key>
+  <key id="ports" for="edge" attr.name="ports" attr.type="string">
+    <default></default>
+  </key>
   <key id="isislevel" for="edge" attr.name="isislevel" attr.type="string">
+    <default></default>
+  </key>
+  <key id="interfacemetrics" for="edge" attr.name="interfacemetrics" attr.type="string">
     <default></default>
   </key>
   <key id="color" for="edge" attr.name="color" attr.type="string">
@@ -163,6 +154,9 @@ foreach my $h1 (keys(%{$topology->{'edges'}})) {
 		my $netmask=&get_attr($h1,$h2,'Netmask');
 		my $interfaces=&get_attr($h1,$h2,'Interface');
 		my $level=&get_attr($h1,$h2,'Level');
+		my $port=&get_attr($h1,$h2,'Port');
+		my $AluType=&get_attr($h1,$h2,'AluType');
+		my $metric=&get_attr($h1,$h2,'metric');
 
 	foreach my $net (keys(%{$interfaces})) {
 		my $interfacesstr=join(' ',@{$interfaces->{$net}});
@@ -181,6 +175,9 @@ foreach my $h1 (keys(%{$topology->{'edges'}})) {
 	print '<data key="ips">'.join(' ',@{$ips->{$net}}).'</data>'."\n";
 	print '<data key="netmask">'.join(' ',@{$netmask->{$net}}).'</data>'."\n";
 	print '<data key="interfaces">'.join(' ',@{$interfaces->{$net}}).'</data>'."\n";
+	print '<data key="alutypes">'.join(' ',@{$AluType->{$net}}).'</data>'."\n";
+	print '<data key="ports">'.join(' ',@{$port->{$net}}).'</data>'."\n";
+	print '<data key="interfacemetrics">'.join(' ',@{$metric->{$net}}).'</data>'."\n";
 	print '<data key="isislevel">'.join(' ',@{$level->{$net}}).'</data>'."\n";
 	print '<data key="color">' .$color.' </data>'."\n" if ($color ne "" );
 	print "</edge>\n";
