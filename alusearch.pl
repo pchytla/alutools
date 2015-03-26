@@ -25,7 +25,7 @@ use AluPorts;
 use AluSVC;
 use AluSAP;
 use AluSDP qw( %sdptypes ) ;
-use Utils qw( in_array );
+use Utils qw( in_array conv32vlantodot convdotto32bit convsapnameto32bit conv32bittosapname portencap );
 $|=1;
 
 use constant VERSION => '0.1';
@@ -50,61 +50,6 @@ my $version;
 my $outfile;
 my $ports;
 my $services;
-
-## {{
-
-sub conv32vlantodot() {
-        my ($encapvalue) = @_;
-        my $cvlan=$encapvalue>>16;
-        my $svlan=$encapvalue&0x0000ffff;
-
-        if ($encapvalue<=4096) {
-                return $encapvalue;
-        }
-
-        return $svlan.".".$cvlan;
-}
-
-# }}
-
-# {{ 
-
-sub convdotto32bit() {
-        my ($vlanstr) = @_;
-        my @vlan=split(/\./,$vlanstr);
-        if (!defined($vlan[1])){
-                push(@vlan,0);
-        }
-        return $vlan[1]*655535+$vlan[0];
-}
-
-# }}
-
-# {{
-
-sub convsapnameto32bit() {
-        my ($sapstr) = @_;
-        my @saparr=split(/:/,$sapstr);
-        if (!defined($saparr[1])) {
-                        return $saparr[0];
-        }
-        return $saparr[0].":".&convdotto32bit($saparr[1]);
-
-}
-# }}
-
-# {{
-
-sub conv32bittosapname() {
-        my ($sapstr) = @_;
-        my @saparr=split(/:/,$sapstr);
-        if (!defined($saparr[1])) {
-                        return $saparr[0];
-        }
-        return $saparr[0].":".&conv32vlantodot($saparr[1]);
-}
-
-# }}
 
 sub snmp_session() {
 	my $hostname=shift;
@@ -360,17 +305,8 @@ while (<FD>) {
 		my $port;
 	
 		$port=$ifname->{$saps[1]};
-		my $sap;
 		my $vlan=&conv32vlantodot($saps[2]);
-		#Null
-		if ($vlan==0) {
-			$sap=$port;
-		} else {
-		#sap:* - dot1/qinq encap
-			$vlan=~s/4095/\*/;
-		#dot1q/qinq
-			$sap=$port.":".$vlan;
-		}
+		my $sap=&portencap($port,$vlan);
 
 		foreach my $c (@svc) {
 			next if ($c->get_id()!=$saps[0]);
