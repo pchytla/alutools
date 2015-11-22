@@ -101,7 +101,6 @@ sub get_all_sdp {
 sub csv {
 	my $self = shift;
 	return $self->{'id'}.";".$self->{'type'}.";".$self->{'sap'}->csv().";".$self->{'sdp'}->csv().";".$self->get_longname().";".$self->get_shortname().";";
-
 }
 
 #

@@ -19,19 +19,23 @@ alusearch
 		-r - Search all routers from file - file format "hostname;community"
 		-n - Search on single router
 		-C - SNMP Community
-	        -m - Search for regexp ( eg. -m 'ZUPA' ) - without -m - match all
-		-s - search only for services  /-p for ports
-	 
+	        -m - Search for regexp ( eg. -m 'ZUPA' )  - default match all
+		-p - disable searching in ports
+		-s - disable searching in services
 
 alusearch Examples
 ====================
 		./alusearch.pl -r ./rtrs -m 'ZUPA' - search for string "ZUPA" in ports descriptions / services-names 
-                and descriptions ( "ZUPA" is for example large client name ) 
-	
-		./alusearch.pl -n R1 -C alupass -m 'ZUPA' - the same but only for single routers 'R1'
+                and descriptions ( "ZUPA" is some common customer name )
 
-		./alusearch.pl -r ./rtrs -m 'KAKA' -p - search only for ports matching 'KAKA' we don't care about services 
-		names/descriptions
+		./alusearch.pl -r ./rtrs -m 'XYZ' search fro string "XYZ" in ports descriptions ( ./rtrs is long list ) - for speed disable searching in services
+
+		./alusearch.pl -n R1 -C alupass -m 'epipe' - all epipe services ( or something like '^\d+;epipe' )
+
+		./alusearch.pl -n R1 -C alupass -m '1/1/1' - All services with SAP on port 1/1/1
+
+		./alusearch.pl -n R1 -C alupass -m '1/1/1:\d+\.300' - All services with qinq SAP that second tag is 300
+
 
 isisdiscovery  
 =================

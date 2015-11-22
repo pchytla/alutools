@@ -48,8 +48,8 @@ my $match;
 my $help;
 my $version;
 my $outfile;
-my $ports;
-my $services;
+my $disableports;
+my $disableservices;
 
 sub snmp_session() {
 	my $hostname=shift;
@@ -122,40 +122,41 @@ sub removebase() {
 }
 
 
-sub write_out()
-{
-	my $name=shift;
-	my $str=shift;
-
-	if (!open(FDOUT,">>$name")) {
-		print STDERR "Problem z utworzeniem $name\n";
-		exit(0);
-	}
-	print FDOUT $str."\n";
-	close(FDOUT);
-}
-
-
 sub write_services() 
 {
 		my $hostnae=shift;
 		my $svc=shift;
+		return if (defined($disableservices));
+	
+		open(FDOUT,">$hostname".".svc") || die "Can't open $hostname".".svc - $!";
 
-       		&write_out("./".$hostname.".svc","srvid;servicetype;sap;sdp;servicelongname;serviceshortname");
+       		print FDOUT "srvid;servicetype;sap;sdp;servicelongname;serviceshortname\n";
 		foreach my $s (sort { $a->get_id() <=> $b->get_id() } @{$svc}) {
-				&write_out("./".$hostname.".svc",$s->csv());
+				if ($s->csv()=~m/$match/) {
+				print FDOUT $s->csv()."\n";
+				}
 		}
+
+		close(FDOUT);
 }
 
 sub write_ports()
 {
 	my $hostname=shift;
 	my $ports=shift;
-	&write_out("./".$hostname.".ports","Port;ifDescr;ifAlias;Type");
+
+	return if (defined($disableports));
+
+	open(FDOUT,">$hostname".".ports") || die "Can't open $hostname".".ports - $!";
+
+	print FDOUT "Port;ifDescr;ifAlias;Type\n";
        	foreach my $p (sort { $a->get_id() <=> $b->get_id() } @{&AluPorts::get_ethphys_ifaces($ports)}) {
-			&write_out("./".$hostname.".ports",$p->csv());
+			if ($p->csv()=~m/$match/) {
+			print FDOUT $p->csv()."\n";
+			}
 	}
 
+	close(FDOUT);
 }
 
 die("Wrong args") unless GetOptions( 'hostname|n=s' => \$hostnamearg, 
@@ -163,19 +164,19 @@ die("Wrong args") unless GetOptions( 'hostname|n=s' => \$hostnamearg,
 					'routerfile|r=s' => \$routerfile, 
 					'version|V' => \$version, 
 					'match|m=s' => \$match ,
-					'ports|p' => \$ports ,
-					'services|s' => \$services ,
+					'disable-ports|p' => \$disableports ,
+					'disable-services|s' => \$disableservices ,
 					'help|h' => \$help ,
 				);
 if( $help ) {
    print "Options:
-   --hostname|n -- Scan single hostname
-   --communiy|C -- SNMP Community
+   --hostname|n - Scan single hostname
+   --communiy|C - SNMP Community
    --routerfile|r - Scan routers from file Format 'hostname;community'
-   --match|m - - Regular expression to Match'
-   --ports|p - - Search for ports ( description )'
-   --services|s - - Search for services ( servicelongname / servcieshortname )'
-   --help|h - - This help'
+   --match|m - Regular expression to Match
+   --disable-ports|p - Disable searching in ports ( default enabled )
+   --disable-services|s - Disable searching in services (default enabled)
+   --help|h - This help'
    --version|V - Version
 ";
    exit(0);
@@ -186,15 +187,6 @@ if (defined($version)) {
 	print "$0 version ".VERSION."\n";
 	exit(0);
 }
-
-if (!defined($ports) && !defined($services)){
-                $ports=1;
-                $services=1;
-}
-
-$ports=0 unless(defined($ports));
-$services=0 unless(defined($services));
-
 
 if (!defined($match)) {
 	$match = qr/.*/;
@@ -213,7 +205,9 @@ if (defined($hostnamearg) && !defined($communityarg)) {
 
 if (!defined($routerfile)) {
 	$routerfile="/tmp/".basename($0).".$$";
-	&write_out($routerfile,"$hostnamearg;$communityarg");
+	open(FDOUT,">$routerfile") || die "Can't open file $routerfile $!";
+	print FDOUT "$hostnamearg;$communityarg\n";
+	close(FDOUT);
 }
 
 if (!open(FD,"<".$routerfile)) {
@@ -259,23 +253,20 @@ while (<FD>) {
 
 	$ifname=&removebase(&my_walk($sess,IFNAME),IFNAME);
 
-	if ($ports) {
-		$ifdescr=&removebase(&my_walk($sess,IFDESCR),IFDESCR);
-		$iftype=&removebase(&my_walk($sess,IFTYPE),IFTYPE);
-		$ifalias=&removebase(&my_walk($sess,IFALIAS),IFALIAS);
+	if (!defined($disableports)) {
+	$ifdescr=&removebase(&my_walk($sess,IFDESCR),IFDESCR);
+	$iftype=&removebase(&my_walk($sess,IFTYPE),IFTYPE);
+	$ifalias=&removebase(&my_walk($sess,IFALIAS),IFALIAS);
+        }
 	
-		my $s;
-		#porty
-		foreach $s (keys(%{$ifname})) {
-			next unless ($ifdescr->{$s}=~m/$match/i);
-			push(@ports,new AluPorts($s,$iftype->{$s},$ifdescr->{$s},$ifname->{$s},$ifalias->{$s}));
-		}
-	
-		&write_ports($hostname,\@ports);
+	my $s;
+	#porty
+	foreach $s (keys(%{$ifname})) {
+		push(@ports,new AluPorts($s,$iftype->{$s},$ifdescr->{$s},$ifname->{$s},$ifalias->{$s}));
 	}
+	
 
-
-	if ($services) {
+	if (!defined($disableservices)) {
 		$servlongname=&removebase(&my_walk($sess,SERVLONGNAME),SERVLONGNAME);
 		$servname=&removebase(&my_walk($sess,SERVNAME),SERVNAME);
 		$servtype=&removebase(&my_walk($sess,SERVTYPE),SERVTYPE);
@@ -284,21 +275,21 @@ while (<FD>) {
 		$sdpbindtype=&removebase(&my_walk($sess,SDPBINDTYPE),SDPBINDTYPE);
 	} else {
 		$sess->close();
-		next;
 	}
 
 	#services / long name
 	foreach $s (keys(%{$servlongname})) {
-		next unless ($servlongname->{$s}=~m/$match/i);
 		my $n=&AluSVC::find_svc(\@svc,$s);
-		push(@svc,new AluSVC($s,$servtype->{$s},$servlongname->{$s},$servname->{$s})) unless (defined($n));
+		next if(defined($n));
+		push(@svc,new AluSVC($s,$servtype->{$s},$servlongname->{$s},$servname->{$s})) ;
 	}
 	# short name
 	foreach $s (keys(%{$servname})) {
-		next unless ($servname->{$s}=~m/$match/i);
 		my $n=&AluSVC::find_svc(\@svc,$s);
-		push(@svc,new AluSVC($s,$servtype->{$s},$servlongname->{$s},$servname->{$s})) unless (defined($n));
+		next if(defined($n));
+		push(@svc,new AluSVC($s,$servtype->{$s},$servlongname->{$s},$servname->{$s}));
 	}
+
 #	##sap-y
 	foreach $s (keys(%{$saplist})) {
 		my @saps=split(/\./,$s);
@@ -311,19 +302,6 @@ while (<FD>) {
 		foreach my $c (@svc) {
 			next if ($c->get_id()!=$saps[0]);
 			$c->add_sap($sap);
-		}
-
-		#Check if SAP is on Phisical Interface that we 
-		#added to @ports if so add all services on this port
-		#
-		foreach my $p (@ports) {
-			next if ($p->get_id()!=$saps[1]);		
-			#
-			my $n=&AluSVC::find_svc(\@svc,$saps[0]);
-			if (!defined($n)) {
-				push(@svc,new AluSVC($saps[0],$servtype->{$saps[0]},$servlongname->{$saps[0]},$servname->{$saps[0]}));
-				$svc[scalar(@svc)-1]->add_sap($sap);
-			}
 		}
 
 	}
@@ -345,6 +323,7 @@ while (<FD>) {
 	}
 	$sess->close;
 	
+	&write_ports($hostname,\@ports);
 	&write_services($hostname,\@svc);
 
 }
