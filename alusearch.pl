@@ -19,12 +19,14 @@
 
 use Getopt::Long;
 use Net::SNMP qw( :snmp :asn1 );
+use Time::HiRes qw( gettimeofday tv_interval );
 use POSIX qw( :math_h );
 use File::Basename;
 use AluPorts;
 use AluSVC;
 use AluSAP;
 use AluSDP qw( %sdptypes ) ;
+use Mysnmp qw ( snmp_session my_walk my_bulk_walk );
 use Utils qw( in_array conv32vlantodot convdotto32bit convsapnameto32bit conv32bittosapname portencap );
 $|=1;
 
@@ -41,34 +43,31 @@ use constant SERVNAME => '.1.3.6.1.4.1.6527.3.1.2.4.2.2.1.29';
 use constant SDPLIST => '.1.3.6.1.4.1.6527.3.1.2.4.4.4.1.33';
 use constant SDPBINDTYPE => '.1.3.6.1.4.1.6527.3.1.2.4.4.4.1.10';
 
+my @ifoids = (  IFNAME,
+		 IFDESCR,
+		IFTYPE,
+		IFALIAS 
+		);
+
+my @srvoids = ( SERVLONGNAME,
+		SERVNAME,
+		SERVTYPE,
+		SAPLIST,
+		SDPLIST,
+		SDPBINDTYPE,
+		);
+
 my $hostnamearg;
 my $communityarg;
 my $routerfile;
 my $match;
+my $bulk;
 my $help;
 my $version;
 my $outfile;
 my $disableports;
 my $disableservices;
-
-sub snmp_session() {
-	my $hostname=shift;
-	my $community=shift;
-	my $ver=shift;
-	my ( $snmpsession, $err ) =  Net::SNMP->session(
-                                                 -version    => $ver,
-                                                 -hostname   => $hostname,
-                                                 -timeout    => 5,
-                                                 -retries    => 3,
-                                                 -community   => $community,
-                                                );
-
-       	if ($err) { 
-			print STDERR "ERR: Blad polaczenia $hostname\n";
-			exit(0);
-	}
-	return $snmpsession;
-}
+my $t0=[gettimeofday()];
 
 #undef - no response
 # 0 - not Alu/TiMOS
@@ -89,36 +88,23 @@ sub alu_check() {
 	return 0;
 }
 
-sub my_walk() {
-	my $s=shift;
-	my $oid=shift;
-	my $baseoid=$oid;
-	my %r;
-	my $res;
-	outer: while ($res=$s->get_next_request(-varbindlist => [$oid])) {
-        	my @k=keys(%{$res});
-        	$oid=$k[0];
-        	last outer unless($oid =~ m/$baseoid/);
-		$r{$oid}=$res->{$oid};
-	}
-	if (!defined($res)) {
-			print STDERR $s->{'_hostname'}." : ERR: OID($baseoid) ".$s->error."\n";
-	}
-	return \%r;
-}
-
 sub removebase() {
 	my $href=shift;
 	my $base=shift;
+	my $r={};
+
+	if (exists($href->{$base})) {
+		return $href->{$base};
+	}
 
 	foreach my $x (keys(%{$href})) {
 		my $n=$x;
 		$n=~s/$base\.//;
-		$href->{$n}=$href->{$x};
-		delete $href->{$x};
+		$r->{$n}=$href->{$x};
+		delete $r->{$x};
 	}
 
-	return $href;
+	return $r;
 }
 
 
@@ -164,6 +150,7 @@ die("Wrong args") unless GetOptions( 'hostname|n=s' => \$hostnamearg,
 					'routerfile|r=s' => \$routerfile, 
 					'version|V' => \$version, 
 					'match|m=s' => \$match ,
+					'bulk|b' => \$bulk ,
 					'disable-ports|p' => \$disableports ,
 					'disable-services|s' => \$disableservices ,
 					'help|h' => \$help ,
@@ -174,6 +161,7 @@ if( $help ) {
    --communiy|C - SNMP Community
    --routerfile|r - Scan routers from file Format 'hostname;community'
    --match|m - Regular expression to Match
+   --bulk|b - Use Bulk
    --disable-ports|p - Disable searching in ports ( default enabled )
    --disable-services|s - Disable searching in services (default enabled)
    --help|h - This help'
@@ -215,6 +203,14 @@ if (!open(FD,"<".$routerfile)) {
 	exit(1);
 }
 
+if (defined($disableports)) {
+	%svcoids=( 'IFNAME' => IFNAME );
+}
+
+if (defined($disableservices)) {
+	%svcoids=();
+}
+
 my @ports;
 my @svc;
 
@@ -239,7 +235,8 @@ while (<FD>) {
 	my $iftype= {} ; 
 	my $ifalias= {} ;
 
-	my $sess=&snmp_session($hostname,$community,'snmpv2c');
+
+	my $sess=&snmp_session($hostname,$community,'snmpv2c',0);
 	my $alu=&alu_check($sess);
 
 	if (!defined($alu)) {
@@ -251,32 +248,51 @@ while (<FD>) {
 		print "WARNING: $hostname is not TiMOS ( Alcatel-Lucent OS) !!!\n"
 	}
 
-	$ifname=&removebase(&my_walk($sess,IFNAME),IFNAME);
-
-	if (!defined($disableports)) {
-	$ifdescr=&removebase(&my_walk($sess,IFDESCR),IFDESCR);
-	$iftype=&removebase(&my_walk($sess,IFTYPE),IFTYPE);
-	$ifalias=&removebase(&my_walk($sess,IFALIAS),IFALIAS);
-        }
+	if (defined($bulk)) {
+		$sess->close();
+	}
 	
+	my $ifall;
+	my $srvall;
+
+	if (!defined($bulk)) {
+	foreach my $oid (@ifoids) {
+		$ifall->{$oid}=&removebase(&my_walk($sess,$oid),$oid);
+	}
+	} else {
+		undef $sess;
+		$sess=&snmp_session($hostname,$community,'snmpv2c',1);
+                $ifall=&my_bulk_walk($sess, \@ifoids);
+	}
+
+	if (!defined($bulk)) {
+	foreach my $oid (@srvoids) {
+		$srvall->{$oid}=&removebase(&my_walk($sess,$oid),$oid);
+	}
+	} else {
+		undef $sess;
+		$sess=&snmp_session($hostname,$community,'snmpv2c',1);
+                $srvall=&my_bulk_walk($sess, \@srvoids);
+	}
+
+        $ifname=&removebase($ifall,IFNAME);
+        $ifdescr=&removebase($ifall,IFDESCR);
+        $ifalias=&removebase($ifall,IFALIAS);
+        $iftype=&removebase($ifall,IFTYPE);
+
+	$servlongname=&removebase($srvall,SERVLONGNAME);
+	$servname=&removebase($srvall,SERVNAME);
+	$servtype=&removebase($srvall,SERVTYPE);
+	$saplist=&removebase($srvall,SAPLIST);
+	$sdplist=&removebase($srvall,SDPLIST);
+	$sdpbindtype=&removebase($srvall,SDPBINDTYPE);
+
 	my $s;
 	#porty
 	foreach $s (keys(%{$ifname})) {
 		push(@ports,new AluPorts($s,$iftype->{$s},$ifdescr->{$s},$ifname->{$s},$ifalias->{$s}));
 	}
 	
-
-	if (!defined($disableservices)) {
-		$servlongname=&removebase(&my_walk($sess,SERVLONGNAME),SERVLONGNAME);
-		$servname=&removebase(&my_walk($sess,SERVNAME),SERVNAME);
-		$servtype=&removebase(&my_walk($sess,SERVTYPE),SERVTYPE);
-		$saplist=&removebase(&my_walk($sess,SAPLIST),SAPLIST);
-		$sdplist=&removebase(&my_walk($sess,SDPLIST),SDPLIST);
-		$sdpbindtype=&removebase(&my_walk($sess,SDPBINDTYPE),SDPBINDTYPE);
-	} else {
-		$sess->close();
-	}
-
 	#services / long name
 	foreach $s (keys(%{$servlongname})) {
 		my $n=&AluSVC::find_svc(\@svc,$s);
@@ -332,4 +348,6 @@ close(FD);
 if (defined($hostnamearg)) {
 	unlink($routerfile);
 }
+
+print $0." Work time ".sprintf("%f",tv_interval($t0))." sec\n";
 exit 0;
