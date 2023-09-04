@@ -18,6 +18,7 @@
 #
 
 use Getopt::Long;
+use Socket;
 use POSIX qw( :math_h strftime );
 use File::Basename;
 use Math::Trig qw( :pi :radial deg2rad );
@@ -28,22 +29,28 @@ use Net::SNMP qw( :snmp :asn1 oid_base_match snmp_dispatcher oid_lex_sort );
 sub fix() { return shift; };
 $|=1;
 
-use constant VERSION => '0.5';
+use constant VERSION => '0.7';
 
 use constant MAX_ISIS_METRIC => 16777215;
+use constant vRtrID=>1;
+use constant isisSysInstance=>0;
+#        If multi-topology is not supported for the route then the value of
+#         tmnxIsisRouteMtId should be 0."
+use constant tmnxIsisRouteMtId=>0;
+#OIDS
 use constant IFDESCR => '.1.3.6.1.2.1.2.2.1.2';
 use constant IFNAME => '.1.3.6.1.2.1.31.1.1.1.1';
 use constant IFTYPE => '.1.3.6.1.2.1.2.2.1.3';
 use constant ipAdEntNetMask => '1.3.6.1.2.1.4.20.1.3';
 use constant ipNetToMediaType => '1.3.6.1.2.1.4.22.1.4';
-use constant ISISADJIP => '.1.3.6.1.4.1.6527.3.1.2.10.3.1.1.3';
-use constant ISISLEVEL => '.1.3.6.1.4.1.6527.3.1.2.10.3.1.1.2';
 #ISIS-MIB
 use constant isisISAdjNeighSysID => '.1.3.6.1.3.37.1.5.1.1.5';  
-#TIMETRA-ISIS-MIB
-use constant vRtrIsisHostnameTable => '.1.3.6.1.4.1.6527.3.1.2.10.1.4.1.2';
-use constant vRtrIsisRouteMetric => '.1.3.6.1.4.1.6527.3.1.2.10.1.5.1.6';
-use constant vRtrIsisIfLevelOperMetric => '.1.3.6.1.4.1.6527.3.1.2.10.2.2.1.11';
+#TIMETRA-ISIS-NG-MIB
+use constant tmnxIsisISAdjNeighborIP => '.1.3.6.1.4.1.6527.3.1.2.88.3.1.1.3.1';
+use constant tmnxIsisHostName => '.1.3.6.1.4.1.6527.3.1.2.88.1.4.1.2';
+use constant tmnxIsisRouteMetric => '.1.3.6.1.4.1.6527.3.1.2.88.1.5.1.9';
+use constant tmnxIsisIfLevelOperMetric => '.1.3.6.1.4.1.6527.3.1.2.88.2.2.1.10';
+use constant tmnxIsisISAdjCircLevel => '.1.3.6.1.4.1.6527.3.1.2.88.3.1.1.2.1';
 #Physical port / encap
 use constant vRtrIfName => '.1.3.6.1.4.1.6527.3.1.2.3.4.1.4';
 use constant vRtrIfType => '.1.3.6.1.4.1.6527.3.1.2.3.4.1.3';
@@ -64,6 +71,15 @@ my %ipNetToMediaType =  (
                 3 => 'dynamic' ,
                 4 => 'static',
             );
+
+my %tmnxIsisRouteDestType = ( 
+                     'unknown'=>0,
+                     'ipv4'=>1,
+                     'ipv6'=>2,
+                     'ipv4z'=>3,
+                     'ipv6z'=>4,
+                     'dns'=>16,
+                 );
 
 #community.txt
 my %alucommunity = ( );
@@ -164,6 +180,49 @@ sub find_community() {
 	return $community;
 }
 
+#tmnxIsisRouteEntry is indexed as follow ( based on TIMETRA-ISIS-NG-MIB.mib - SROS: 19.10.X)
+#
+#    INDEX       {
+#        vRtrID,
+#        isisSysInstance,
+#        tmnxIsisRouteMtId,
+#        tmnxIsisRouteDestType,
+#        tmnxIsisRouteDest,
+#        tmnxIsisRoutePrefixLength,
+#        tmnxIsisRouteNexthopIPType,
+#        tmnxIsisRouteNexthopIP
+#    }
+
+sub buildv4_IsisRouteMetric_OID() {
+	my $metricoid=shift;
+	my $ip=shift;
+	my $prefix=shift;
+	my $nexthop=shift;
+	my $desttype=$tmnxIsisRouteDestType{'ipv4'};
+	my $destlen=4;
+	#
+	return $metricoid.".".vRtrID.".".isisSysInstance.".".tmnxIsisRouteMtId.".".$desttype.".".$destlen.".".$ip.".".$prefix.".".$desttype.".".$destlen.".".$nexthop;
+}
+
+#tmnxIsisHostEntry is indexed as follow ( based on TIMETRA-ISIS-NG-MIB.mib - SROS: ver 19.10.X)
+#
+#    INDEX       {
+#        vRtrID,
+#        isisSysInstance,
+#        tmnxIsisHostSysID
+#    }
+
+sub build_isishostname_OID() {
+	my $hostnameoid=shift;
+	my $systemid=shift;
+	if (ref($systemid) ne 'ARRAY') { 
+		print STDERR "ERR: build_isishostname_OID : systemid is not ARRAY-REF\n";
+		return undef;
+	}
+	my $systemidlen=scalar(@{$systemid});
+	$isishostnameoid=$hostnameoid.".".vRtrID.".".isisSysInstance.".".$systemidlen.".".join('.',@{$systemid});
+	return $isishostnameoid;
+}
 
 sub my_walk() {
 	my $s=shift;
@@ -384,13 +443,12 @@ sub get_isis_route_metric() {
 		$topology->{'nodes'}->{$h}->{'sysdescr'}=$sys;
 		$topology->{'nodes'}->{$h}->{'type'}=$alu;
 
-		$isisadjip=&removebase(&my_walk($sess,ISISADJIP),ISISADJIP);
+		$isisadjip=&removebase(&my_walk($sess,tmnxIsisISAdjNeighborIP),tmnxIsisISAdjNeighborIP);
 		foreach my $oid (keys(%{$isisadjip})) {
-			my @x=split(/\./,$oid);
-			my $rtmetric=$sess->get_request( -varbindlist => [ vRtrIsisRouteMetric.'.'.$x[0].'.'.$startip.'.255.255.255.255.'.$isisadjip->{$oid} ] );
-			next if ( $rtmetric->{ vRtrIsisRouteMetric.'.'.$x[0].'.'.$startip.'.255.255.255.255.'.$isisadjip->{$oid} } eq 'noSuchInstance' );
-
-			$topology->{'nodes'}->{$h}->{'metric'}=$rtmetric->{ vRtrIsisRouteMetric.'.'.$x[0].'.'.$startip.'.255.255.255.255.'.$isisadjip->{$oid}};
+			my $metricoid=&buildv4_IsisRouteMetric_OID(tmnxIsisRouteMetric,$startip,32,$isisadjip->{$oid});
+			my $rtmetric=$sess->get_request( -varbindlist => [ $metricoid ] );
+			next if ( $rtmetric->{$metricoid} eq 'noSuchInstance' );
+			$topology->{'nodes'}->{$h}->{'metric'}=$rtmetric->{$metricoid};
 			last;
 		}
 
@@ -444,20 +502,19 @@ sub isis_discovery
 	my $ifname;
 
 	if ($nobulk) {
-		$isisadjip=&removebase(&my_walk($sess,ISISADJIP),ISISADJIP);
-		$isisadjlevel=&removebase(&my_walk($sess,ISISLEVEL),ISISLEVEL);
+		$isisadjip=&removebase(&my_walk($sess,tmnxIsisISAdjNeighborIP),tmnxIsisISAdjNeighborIP);
+		$isisadjlevel=&removebase(&my_walk($sess,tmnxIsisISAdjCircLevel),tmnxIsisISAdjCircLevel);
 		$sess->translate(['-octetstring'=> 0x0 ]);
 		$isisadjsystemid=&removebase(&my_walk($sess,isisISAdjNeighSysID),isisISAdjNeighSysID);
-		$isisiflevelopermetric=&removebase(&my_walk($sess,vRtrIsisIfLevelOperMetric),vRtrIsisIfLevelOperMetric);
+		$isisiflevelopermetric=&removebase(&my_walk($sess,tmnxIsisIfLevelOperMetric),tmnxIsisIfLevelOperMetric);
 	} else {
 		$sess->close();
 		undef $sess;
-		$allresults=&my_bulk_walk($hostname,$community,[ ISISADJIP,ISISLEVEL, isisISAdjNeighSysID , vRtrIsisIfLevelOperMetric]);
-		$isisadjip=&removebase($allresults,ISISADJIP);
-		$isisadjlevel=&removebase($allresults,ISISLEVEL);
+		$allresults=&my_bulk_walk($hostname,$community,[ tmnxIsisISAdjNeighborIP, tmnxIsisISAdjCircLevel, isisISAdjNeighSysID , tmnxIsisIfLevelOperMetric]);
+		$isisadjip=&removebase($allresults,tmnxIsisISAdjNeighborIP);
+		$isisadjlevel=&removebase($allresults,tmnxIsisISAdjCircLevel);
 		$isisadjsystemid=&removebase($allresults,isisISAdjNeighSysID);
-		$isisiflevelopermetric=&removebase($allresults,vRtrIsisIfLevelOperMetric);
-
+		$isisiflevelopermetric=&removebase($allresults,tmnxIsisIfLevelOperMetric);
 		$sess=&snmp_session($hostname,$community,'snmpv2c');
 		if (!ref($sess) && $sess =~ m/ERR_/) {
 			return $sess;
@@ -473,7 +530,7 @@ sub isis_discovery
 			my $isishostname;
 			my @x=split(/\./,$oid);
 
-			$isishostnameoid=vRtrIsisHostnameTable.'.'.$x[0].'.6.'.join('.',@systemid) ;
+			$isishostnameoid=&build_isishostname_OID(tmnxIsisHostName,\@systemid);
 			$isishostname=$sess->get_request( -varbindlist => [ $isishostnameoid ]);
 			if ($isishostname->{$isishostnameoid} eq 'noSuchInstance') {
 				print "$hostname ($oid)  vRtrIsisHostnameEntry ( $isishostnameoid ) OID not found \n";
@@ -610,7 +667,6 @@ sub isis_discovery
 
 
 #MAIN
-
 die("Wrong args") unless GetOptions( 'hostname|n=s' => \$hostname, 
 					'community|C=s' => \$community,
 					'output|O=s' => \$output,
@@ -707,17 +763,9 @@ if ($geosort) {
 
 
 $starthostname=$hostname;
-my @host=split(/ /,`host -t A $hostname 2>/dev/null`);
-if (scalar(@host)<4) {
-		print "ERR: system comand 'host' not found or start node $hostname can't resolved to IP\n";
-		exit(1);
-}
-$startip=$host[3];
-chomp($startip);
-if ($startip eq "" ) {
-		print "ERR: system comand 'host' not found or start node $hostname can't resolved to IP\n";
-		exit(0);
-}
+@startarr = gethostbyname($hostname) ;
+@startarr = map { inet_ntoa($_) } @startarr[4 .. $#startarr];
+$startip=$startarr[0];
 
 $SIG{'INT'}=\&sig_handler;
 $SIG{'QUIT'}=\&sig_handler;
