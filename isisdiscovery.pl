@@ -43,6 +43,7 @@ use constant ipAdEntNetMask => '1.3.6.1.2.1.4.20.1.3';
 use constant ipNetToMediaType => '1.3.6.1.2.1.4.22.1.4';
 #ISIS-MIB
 use constant isisISAdjNeighSysID => '.1.3.6.1.3.37.1.5.1.1.5';  
+use constant isisISAdjProtSuppProtocol => '.1.3.6.1.3.37.1.5.4.1.2';
 #TIMETRA-ISIS-NG-MIB
 use constant tmnxIsisISAdjNeighborIP => '.1.3.6.1.4.1.6527.3.1.2.88.3.1.1.3';
 use constant tmnxIsisIfLevelOperMetric => '.1.3.6.1.4.1.6527.3.1.2.88.2.2.1.10';
@@ -255,6 +256,7 @@ sub build_isishostname_OID() {
 	return $isishostnameoid;
 }
 
+
 sub my_walk() {
 	my $s=shift;
 	my $oid=shift;
@@ -464,7 +466,7 @@ sub get_isis_route_metric() {
 		}
 
 		if ($alu!~m/^ALU_/) {
-			print "WARNING: $h is not TiMOS ( Alcatel-Lucent OS) !!!\n";
+			print "WARNING: $h is not TiMOS ( Nokia/ALU OS) !!!\n";
 			$topology->{'nodes'}->{$h}->{'sysdescr'}=$sys;
 			$topology->{'nodes'}->{$h}->{'type'}=$alu;
 			$sess->close();
@@ -542,11 +544,12 @@ sub isis_discovery
 		$isisadjlevel=&removebase(&my_walk($sess,tmnxIsisISAdjCircLevel),tmnxIsisISAdjCircLevel);
 		$sess->translate(['-octetstring'=> 0x0 ]);
 		$isisadjsystemid=&removebase(&my_walk($sess,isisISAdjNeighSysID),isisISAdjNeighSysID);
+		$isisadjprotsupp=&removebase(&my_walk($sess,isisISAdjProtSuppProtocol),isisISAdjProtSuppProtocol);
 		$isisiflevelopermetric=&removebase(&my_walk($sess,tmnxIsisIfLevelOperMetric),tmnxIsisIfLevelOperMetric);
 	} else {
 		$sess->close();
 		undef $sess;
-		$allresults=&my_bulk_walk($hostname,$community,[ tmnxIsisISAdjNeighborIP, tmnxIsisISAdjCircLevel, isisISAdjNeighSysID , tmnxIsisIfLevelOperMetric]);
+		$allresults=&my_bulk_walk($hostname,$community,[ tmnxIsisISAdjNeighborIP, tmnxIsisISAdjCircLevel, isisISAdjNeighSysID , isisISAdjProtSuppProtocol, tmnxIsisIfLevelOperMetric]);
 
 
 #TIMETRA-ISIS-NG-MIB.mib  SROS 16.X/19.X/22.X
@@ -561,6 +564,7 @@ sub isis_discovery
 #    }
 #
 		$isisadjip=&removebase($allresults,tmnxIsisISAdjNeighborIP);
+		$isisadjprotsupp=&removebase($allresults,isisISAdjProtSuppProtocol);
 		$isisadjlevel=&removebase($allresults,tmnxIsisISAdjCircLevel);
 
 #TIMETRA-ISIS-NG-MIB.mib SROS 16.X/19.X/22.X
@@ -588,7 +592,6 @@ sub isis_discovery
 #
 		$isisadjsystemid=&removebase($allresults,isisISAdjNeighSysID);
 
-
 		$sess=&snmp_session($hostname,$community,'snmpv2c');
 		if (!ref($sess) && $sess =~ m/ERR_/) {
 			return $sess;
@@ -604,7 +607,22 @@ sub isis_discovery
 			my ($vRtrID,$isisSysInstance,$isisCircIndex,$isisISAdjIndex)=split(/\./,$oid);
 			my $systemidkey=join('.',($isisSysInstance,$isisCircIndex,$isisISAdjIndex));
 			my @systemid=unpack("CCCCCC",$isisadjsystemid->{$systemidkey});
-
+#
+#             "Types of network protocol supported by Integrated ISIS.
+#              The values for ISO8473 and IP are those registered for
+#              these protocols in ISO TR9577."
+#       SYNTAX        INTEGER
+#                        {
+#                         iso8473(129),
+#                         ipV6(142),
+#                         ip(204)
+#                        }
+#
+			if (!exists($isisadjprotsupp->{$systemidkey.'.204'})) {
+				my $proto=&removebase($isisadjprotsupp,$systemidkey);
+				print "$hostname  - isisSysInstance:".$isisSysInstance." isisCircIndex:".$isisCircIndex." Protocol not supported ".join(',',keys(%{$proto}))."\n";
+				next;
+			}
 			$isishostnameoid=&build_isishostname_OID($vRtrID,$isisSysInstance,tmnxIsisHostName,\@systemid);
 			$isishostname=$sess->get_request( -varbindlist => [ $isishostnameoid ]);
 			if ($isishostname->{$isishostnameoid} eq 'noSuchInstance') {
