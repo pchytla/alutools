@@ -32,11 +32,9 @@ $|=1;
 use constant VERSION => '0.7';
 
 use constant MAX_ISIS_METRIC => 16777215;
-use constant vRtrID=>1;
-use constant isisSysInstance=>0;
 #        If multi-topology is not supported for the route then the value of
 #         tmnxIsisRouteMtId should be 0."
-use constant tmnxIsisRouteMtId=>0;
+use constant _tmnxIsisRouteMtId=>0;
 #OIDS
 use constant IFDESCR => '.1.3.6.1.2.1.2.2.1.2';
 use constant IFNAME => '.1.3.6.1.2.1.31.1.1.1.1';
@@ -46,11 +44,15 @@ use constant ipNetToMediaType => '1.3.6.1.2.1.4.22.1.4';
 #ISIS-MIB
 use constant isisISAdjNeighSysID => '.1.3.6.1.3.37.1.5.1.1.5';  
 #TIMETRA-ISIS-NG-MIB
-use constant tmnxIsisISAdjNeighborIP => '.1.3.6.1.4.1.6527.3.1.2.88.3.1.1.3.1';
-use constant tmnxIsisHostName => '.1.3.6.1.4.1.6527.3.1.2.88.1.4.1.2';
-use constant tmnxIsisRouteMetric => '.1.3.6.1.4.1.6527.3.1.2.88.1.5.1.9';
+use constant tmnxIsisISAdjNeighborIP => '.1.3.6.1.4.1.6527.3.1.2.88.3.1.1.3';
 use constant tmnxIsisIfLevelOperMetric => '.1.3.6.1.4.1.6527.3.1.2.88.2.2.1.10';
-use constant tmnxIsisISAdjCircLevel => '.1.3.6.1.4.1.6527.3.1.2.88.3.1.1.2.1';
+use constant tmnxIsisISAdjCircLevel => '.1.3.6.1.4.1.6527.3.1.2.88.3.1.1.2';
+#HostName
+use constant tmnxIsisHostName => '.1.3.6.1.4.1.6527.3.1.2.88.1.4.1.2';
+#Metric
+use constant tmnxIsisRouteMetric => '.1.3.6.1.4.1.6527.3.1.2.88.1.5.1.9';
+use constant tmnxIsisRouteNhMetric => '.1.3.6.1.4.1.6527.3.1.2.88.1.20.1.10';
+
 #Physical port / encap
 use constant vRtrIfName => '.1.3.6.1.4.1.6527.3.1.2.3.4.1.4';
 use constant vRtrIfType => '.1.3.6.1.4.1.6527.3.1.2.3.4.1.3';
@@ -180,7 +182,7 @@ sub find_community() {
 	return $community;
 }
 
-#tmnxIsisRouteEntry is indexed as follow ( based on TIMETRA-ISIS-NG-MIB.mib - SROS: 19.10.X)
+#tmnxIsisRouteEntry - TIMETRA-ISIS-NG-MIB.mib - SROS: 19.10.X
 #
 #    INDEX       {
 #        vRtrID,
@@ -194,6 +196,8 @@ sub find_community() {
 #    }
 
 sub buildv4_IsisRouteMetric_OID() {
+	my $vrtrid=shift;
+	my $isisinstance=shift;
 	my $metricoid=shift;
 	my $ip=shift;
 	my $prefix=shift;
@@ -201,10 +205,35 @@ sub buildv4_IsisRouteMetric_OID() {
 	my $desttype=$tmnxIsisRouteDestType{'ipv4'};
 	my $destlen=4;
 	#
-	return $metricoid.".".vRtrID.".".isisSysInstance.".".tmnxIsisRouteMtId.".".$desttype.".".$destlen.".".$ip.".".$prefix.".".$desttype.".".$destlen.".".$nexthop;
+	return $metricoid.".".$vrtrid.".".$isisinstance."."._tmnxIsisRouteMtId.".".$desttype.".".$destlen.".".$ip.".".$prefix.".".$desttype.".".$destlen.".".$nexthop;
 }
 
-#tmnxIsisHostEntry is indexed as follow ( based on TIMETRA-ISIS-NG-MIB.mib - SROS: ver 19.10.X)
+#tmnxIsisRouteNhEntry -  TIMETRA-ISIS-NG-MIB.mib - SROS: 22.10.X
+#   INDEX       {
+#        vRtrID,
+#        isisSysInstance,
+#        tmnxIsisRouteNhMtId,
+#        tmnxIsisRouteNhDestType,
+#        tmnxIsisRouteNhDest,
+#        tmnxIsisRouteNhPrefixLength,
+#        tmnxIsisRouteNhEcmpIndex
+#    }
+
+sub buildv4_IsisRouteMetric2_OID() {
+	my $vrtrid=shift;
+	my $isisinstance=shift;
+	my $metricoid=shift;
+	my $ip=shift;
+	my $prefix=shift;
+	my $nexthop=shift;
+	my $desttype=$tmnxIsisRouteDestType{'ipv4'};
+	my $destlen=4;
+	my $ecmpindex=1;
+	#
+	return $metricoid.".".$vrtrid.".".$isisinstance."."._tmnxIsisRouteMtId.".".$desttype.".".$destlen.".".$ip.".".$prefix.".".$desttype.".".$destlen.".".$nexthop.".".$ecmpindex;
+}
+
+#tmnxIsisHostEntry - TIMETRA-ISIS-NG-MIB.mib - SROS: ver 19.10.X
 #
 #    INDEX       {
 #        vRtrID,
@@ -213,6 +242,8 @@ sub buildv4_IsisRouteMetric_OID() {
 #    }
 
 sub build_isishostname_OID() {
+	my $vrtrid=shift;
+	my $isisinstance=shift;
 	my $hostnameoid=shift;
 	my $systemid=shift;
 	if (ref($systemid) ne 'ARRAY') { 
@@ -220,7 +251,7 @@ sub build_isishostname_OID() {
 		return undef;
 	}
 	my $systemidlen=scalar(@{$systemid});
-	$isishostnameoid=$hostnameoid.".".vRtrID.".".isisSysInstance.".".$systemidlen.".".join('.',@{$systemid});
+	$isishostnameoid=$hostnameoid.".".$vrtrid.".".$isisinstance.".".$systemidlen.".".join('.',@{$systemid});
 	return $isishostnameoid;
 }
 
@@ -445,9 +476,14 @@ sub get_isis_route_metric() {
 
 		$isisadjip=&removebase(&my_walk($sess,tmnxIsisISAdjNeighborIP),tmnxIsisISAdjNeighborIP);
 		foreach my $oid (keys(%{$isisadjip})) {
-			my $metricoid=&buildv4_IsisRouteMetric_OID(tmnxIsisRouteMetric,$startip,32,$isisadjip->{$oid});
+			my ($vRtrID,$isisSysInstance,$isisCircIndex,$isisISAdjIndex)=split(/\./,$oid);
+			my $metricoid=&buildv4_IsisRouteMetric_OID($vRtrID,$isisSysInstance,tmnxIsisRouteMetric,$startip,32,$isisadjip->{$oid});
 			my $rtmetric=$sess->get_request( -varbindlist => [ $metricoid ] );
-			next if ( $rtmetric->{$metricoid} eq 'noSuchInstance' );
+			if ( $rtmetric->{$metricoid} eq 'noSuchInstance' || $rtmetric->{$metricoid} eq 'noSuchObject' ) { 
+				$metricoid=&buildv4_IsisRouteMetric2_OID($vRtrID,$isisSysInstance,tmnxIsisRouteNhMetric,$startip,32,$isisadjip->{$oid});
+				$rtmetric=$sess->get_request( -varbindlist => [ $metricoid ] );
+			}
+			next if ( $rtmetric->{$metricoid} eq 'noSuchInstance' ||  $rtmetric->{$metricoid} eq 'noSuchObject' );
 			$topology->{'nodes'}->{$h}->{'metric'}=$rtmetric->{$metricoid};
 			last;
 		}
@@ -511,10 +547,48 @@ sub isis_discovery
 		$sess->close();
 		undef $sess;
 		$allresults=&my_bulk_walk($hostname,$community,[ tmnxIsisISAdjNeighborIP, tmnxIsisISAdjCircLevel, isisISAdjNeighSysID , tmnxIsisIfLevelOperMetric]);
+
+
+#TIMETRA-ISIS-NG-MIB.mib  SROS 16.X/19.X/22.X
+#    DESCRIPTION
+#        "Each row entry in the tmnxIsisISAdjTable represents an adjacency to an
+#         Intermediate System on this system."
+#    INDEX       {
+#        vRtrID,
+#        isisSysInstance,
+#        isisCircIndex,
+#        isisISAdjIndex
+#    }
+#
 		$isisadjip=&removebase($allresults,tmnxIsisISAdjNeighborIP);
 		$isisadjlevel=&removebase($allresults,tmnxIsisISAdjCircLevel);
-		$isisadjsystemid=&removebase($allresults,isisISAdjNeighSysID);
+
+#TIMETRA-ISIS-NG-MIB.mib SROS 16.X/19.X/22.X
+#    DESCRIPTION
+#        "Each row entry in the tmnxIsisIfLevelTable represents IS-IS level
+#         attributes to be used with an interface belonging to a specific IS-IS
+#         protocol instance on a specific router instance. Rows for Level 1 and
+#         2 are created as an action of creating a row in the tmnxIsisIfTable."
+#    INDEX       {
+#        vRtrID,
+#        isisSysInstance,
+#        vRtrIfIndex,
+#        tmnxIsisIfLevel
+#    }
+#
 		$isisiflevelopermetric=&removebase($allresults,tmnxIsisIfLevelOperMetric);
+
+#ISIS.MIB SROS 16.X/19.X/22.X
+#         DESCRIPTION
+#             "Each entry corresponds to one adjacency to an
+#             Intermediate System on this system."
+#         INDEX { isisSysInstance,
+#                 isisCircIndex,
+#                 isisISAdjIndex }
+#
+		$isisadjsystemid=&removebase($allresults,isisISAdjNeighSysID);
+
+
 		$sess=&snmp_session($hostname,$community,'snmpv2c');
 		if (!ref($sess) && $sess =~ m/ERR_/) {
 			return $sess;
@@ -525,12 +599,13 @@ sub isis_discovery
 	print "===> (".strftime("%Y-%m-%d-%H:%M:%S",localtime(time())).") $hostname  Hosts in QUEUE: ".scalar(@all)." Metric to $starthostname : ".&$metric($hostname)."\n";
 
 	foreach my $oid (keys(%{$isisadjip})) {
-			my @systemid=unpack("CCCCCC",$isisadjsystemid->{$oid});
 			my $isishostnameoid;
 			my $isishostname;
-			my @x=split(/\./,$oid);
+			my ($vRtrID,$isisSysInstance,$isisCircIndex,$isisISAdjIndex)=split(/\./,$oid);
+			my $systemidkey=join('.',($isisSysInstance,$isisCircIndex,$isisISAdjIndex));
+			my @systemid=unpack("CCCCCC",$isisadjsystemid->{$systemidkey});
 
-			$isishostnameoid=&build_isishostname_OID(tmnxIsisHostName,\@systemid);
+			$isishostnameoid=&build_isishostname_OID($vRtrID,$isisSysInstance,tmnxIsisHostName,\@systemid);
 			$isishostname=$sess->get_request( -varbindlist => [ $isishostnameoid ]);
 			if ($isishostname->{$isishostnameoid} eq 'noSuchInstance') {
 				print "$hostname ($oid)  vRtrIsisHostnameEntry ( $isishostnameoid ) OID not found \n";
@@ -549,13 +624,13 @@ sub isis_discovery
 				next;
 			}
 
-			$ifname=$sess->get_request ( -varbindlist => [ IFNAME.'.'.$x[1] ] );
-			if ( $ifname->{ IFNAME.'.'.$x[1] } eq 'noSuchInstance' ) {
-				print $hostname." Interface not found ".$isisneighname{$oid}." Index: ".$x[1]."\n";
+			$ifname=$sess->get_request ( -varbindlist => [ IFNAME.'.'.$isisCircIndex ] );
+			if ( $ifname->{ IFNAME.'.'.$isisCircIndex } eq 'noSuchInstance' ) {
+				print $hostname." Interface not found ".$isisneighname{$oid}." Index: ".$isisCircIndex."\n";
                                 next;
                         }
 
-			my $name=$ifname->{ IFNAME.'.'.$x[1] };
+			my $name=$ifname->{ IFNAME.'.'.$isisCircIndex };
 
 			print $hostname." ISIS ADJ IP: ".$isisadjip->{$oid}." Level ".$vRtrIsisISAdjCircLevel{$isisadjlevel->{$oid}}." SystemName: ".$isisneighname{$oid}."\n";
 
@@ -567,11 +642,11 @@ sub isis_discovery
 				$topology->{'edges'}->{$hostname}->{$isisneighname{$oid}}={};
 			}
 
-			$topology->{'nodes'}->{$hostname}->{$name}->{'ifIndex'}=$x[1];
+			$topology->{'nodes'}->{$hostname}->{$name}->{'ifIndex'}=$isisCircIndex;
 			$topology->{'nodes'}->{$hostname}->{$name}->{'Level'}=$vRtrIsisISAdjCircLevel{$isisadjlevel->{$oid}};
 			$topology->{'nodes'}->{$hostname}->{$name}->{'neighbor'}=$isisneighname{$oid};
 			$topology->{'nodes'}->{$hostname}->{$name}->{'metric'}=$isisiflevelopermetric->{$oid};
-			my $arp=&removebase(&my_walk($sess,ipNetToMediaType.".".$x[1]),ipNetToMediaType.".".$x[1]);
+			my $arp=&removebase(&my_walk($sess,ipNetToMediaType.".".$isisCircIndex),ipNetToMediaType.".".$isisCircIndex);
 			my @ips;
 			foreach my $ip (keys(%{$arp})) {
 				next if ($ipNetToMediaType{$arp->{$ip}} ne 'other');
@@ -588,46 +663,54 @@ sub isis_discovery
 			$topology->{'nodes'}->{$hostname}->{$name}->{'IP'}=$ips[0];
 			$netmask=$sess->get_request ( -varbindlist => [ ipAdEntNetMask.'.'.$ips[0] ] );
 			if ( $netmask->{ ipAdEntNetMask.'.'.$ips[0] } eq 'noSuchInstance' ) {
-				print $hostname." Interface ".$name." Index ".$x[1]." IP: ".$ips[0]." Netmask not found\n";
+				print $hostname." Interface ".$name." Index ".$isisCircIndex." IP: ".$ips[0]." Netmask not found\n";
 				&push_to_queue($isisneighname{$oid});
 				next;
 			}
 
 			$topology->{'nodes'}->{$hostname}->{$name}->{'Netmask'}=$netmask->{ ipAdEntNetMask.'.'.$ips[0] };
 
+#SROS : 16.X/19.X/22.X
+#    DESCRIPTION
+#        "Each row entry represents a virtual router interface in the system.
+#         Entries can be created and deleted via SNMP SET operations using the
+#         vRtrIfRowStatus variable."
+#    INDEX       {
+#        vRtrID,
+#        vRtrIfIndex
+#    }
 
-
-			my $vrtrifname=$sess->get_request( -varbindlist => [ vRtrIfName.'.1.'.$x[1] ] );
-			if ( $vrtrifname->{ vRtrIfName.'.1.'.$x[1] } eq 'noSuchInstanse' ) { 
-				print $hostname." Index ".$x[1]." Failed to get vRtrIfName\n";
+			my $vrtrifname=$sess->get_request( -varbindlist => [ vRtrIfName.'.'.$vRtrID.'.'.$isisCircIndex ] );
+			if ( $vrtrifname->{ vRtrIfName.'.'.$vRtrID.'.'.$isisCircIndex } eq 'noSuchInstanse' ) { 
+				print $hostname." Index ".$isisCircIndex." Failed to get vRtrIfName\n";
 				&push_to_queue($isisneighname{$oid});
 				next;
 			}
 
-			if ( $vrtrifname->{ vRtrIfName.'.1.'.$x[1] } ne $name ) { 
-				print $hostname." Interface ".$name." not the same ".$vrtrifname->{ vRtrIfName.'.'.$x[1] }."\n";
+			if ( $vrtrifname->{ vRtrIfName.'.'.$vRtrID.'.'.$isisCircIndex } ne $name ) { 
+				print $hostname." Interface ".$name." not the same ".$vrtrifname->{ vRtrIfName.'.'.$isisCircIndex }."\n";
 				&push_to_queue($isisneighname{$oid});
 				next;
 			}
 
-			my $vrtriftype=$sess->get_request( -varbindlist => [ vRtrIfType.'.1.'.$x[1] ] );
-			if ( $vrtriftype->{ vRtrIfType.'.1.'.$x[1] } eq 'noSuchInstanse' ) { 
-				print $hostname." Index ".$x[1]." Failed to get vRtrIfType\n";
+			my $vrtriftype=$sess->get_request( -varbindlist => [ vRtrIfType.'.'.$vRtrID.'.'.$isisCircIndex ] );
+			if ( $vrtriftype->{ vRtrIfType.'.'.$vRtrID.'.'.$isisCircIndex } eq 'noSuchInstanse' ) { 
+				print $hostname." Index ".$isisCircIndex." Failed to get vRtrIfType\n";
 				&push_to_queue($isisneighname{$oid});
 				next;
 			}
 
-			my $vrtrifportid = $sess->get_request( -varbindlist => [ vRtrIfPortID.'.1.'.$x[1] ] );
-			if ( $vrtrifportid->{ vRtrIfPortID.'.1.'.$x[1] } eq 'noSuchInstanse' ) { 
-				print $hostname." Index ".$x[1]." Failed to get vRtrIfPortID\n";
+			my $vrtrifportid = $sess->get_request( -varbindlist => [ vRtrIfPortID.'.'.$vRtrID.'.'.$isisCircIndex ] );
+			if ( $vrtrifportid->{ vRtrIfPortID.'.'.$vRtrID.'.'.$isisCircIndex } eq 'noSuchInstanse' ) { 
+				print $hostname." Index ".$isisCircIndex." Failed to get vRtrIfPortID\n";
 				&push_to_queue($isisneighname{$oid});
 				next;
 			}
-			my $ifportid=$vrtrifportid->{ vRtrIfPortID.'.1.'.$x[1] };
+			my $ifportid=$vrtrifportid->{ vRtrIfPortID.'.'.$vRtrID.'.'.$isisCircIndex };
 
-			my $vrtrifencapvalue = $sess->get_request( -varbindlist => [ vRtrIfEncapValue.'.1.'.$x[1] ] );
-			if ( $vrtrifencapvalue->{ vRtrIfEncapValue.'.1.'.$x[1] } eq 'noSuchInstanse' ) { 
-				print $hostname." Index ".$x[1]." Failed to get vRtrIfEncapValue\n";
+			my $vrtrifencapvalue = $sess->get_request( -varbindlist => [ vRtrIfEncapValue.'.'.$vRtrID.'.'.$isisCircIndex ] );
+			if ( $vrtrifencapvalue->{ vRtrIfEncapValue.'.'.$vRtrID.'.'.$isisCircIndex } eq 'noSuchInstanse' ) { 
+				print $hostname." Index ".$isisCircIndex." Failed to get vRtrIfEncapValue\n";
 				&push_to_queue($isisneighname{$oid});
 				next;
 			}
@@ -641,20 +724,20 @@ sub isis_discovery
 
                         my $physiface=$ifname->{ IFNAME.'.'.$ifportid };
 
-			my $vrtrifsvcid = $sess->get_request( -varbindlist => [ vRtrIfServiceId.'.1.'.$x[1] ] );
-			if ( $vrtrifsvcid->{ vRtrIfServiceId.'.1.'.$x[1] } eq 'noSuchInstanse' ) { 
-				print $hostname." Index ".$x[1]." Failed to get vRtrIfServiceId\n";
+			my $vrtrifsvcid = $sess->get_request( -varbindlist => [ vRtrIfServiceId.'.'.$vRtrID.'.'.$isisCircIndex ] );
+			if ( $vrtrifsvcid->{ vRtrIfServiceId.'.'.$vRtrID.'.'.$isisCircIndex } eq 'noSuchInstanse' ) { 
+				print $hostname." Index ".$isisCircIndex." Failed to get vRtrIfServiceId\n";
 				&push_to_queue($isisneighname{$oid});
 				next;
 			}
 
-			if ( $vrtriftype->{ vRtrIfType.'.1.'.$x[1] } ne '1' ) {  
-				$topology->{'nodes'}->{$hostname}->{$name}->{'SAP'}=&portencap($physiface,&conv32vlantodot($vrtrifencapvalue->{ vRtrIfEncapValue.'.1.'.$x[1] }));
-				$topology->{'nodes'}->{$hostname}->{$name}->{'svcid'}=$vrtrifsvcid-> { vRtrIfServiceId.'.1.'.$x[1] };
-				$topology->{'nodes'}->{$hostname}->{$name}->{'AluType'}=&get_aluporttype($vrtriftype->{ vRtrIfType.'.1.'.$x[1] });
+			if ( $vrtriftype->{ vRtrIfType.'.'.$vRtrID.'.'.$isisCircIndex } ne '1' ) {  
+				$topology->{'nodes'}->{$hostname}->{$name}->{'SAP'}=&portencap($physiface,&conv32vlantodot($vrtrifencapvalue->{ vRtrIfEncapValue.'.'.$vRtrID.'.'.$isisCircIndex }));
+				$topology->{'nodes'}->{$hostname}->{$name}->{'svcid'}=$vrtrifsvcid-> { vRtrIfServiceId.'.'.$vRtrID.'.'.$isisCircIndex };
+				$topology->{'nodes'}->{$hostname}->{$name}->{'AluType'}=&get_aluporttype($vrtriftype->{ vRtrIfType.'.'.$vRtrID.'.'.$isisCircIndex });
 			} else {
-				$topology->{'nodes'}->{$hostname}->{$name}->{'Port'}=&portencap($physiface,$vrtrifencapvalue->{ vRtrIfEncapValue.'.1.'.$x[1] });
-				$topology->{'nodes'}->{$hostname}->{$name}->{'AluType'}=&get_aluporttype($vrtriftype->{ vRtrIfType.'.1.'.$x[1] });
+				$topology->{'nodes'}->{$hostname}->{$name}->{'Port'}=&portencap($physiface,$vrtrifencapvalue->{ vRtrIfEncapValue.'.'.$vRtrID.'.'.$isisCircIndex });
+				$topology->{'nodes'}->{$hostname}->{$name}->{'AluType'}=&get_aluporttype($vrtriftype->{ vRtrIfType.'.'.$vRtrID.'.'.$isisCircIndex });
 			}
 
 			&push_to_queue($isisneighname{$oid});
