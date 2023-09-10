@@ -117,17 +117,8 @@ isisdiscovery examples
 
 Tested
 ============
-**7750 SR7/SR12**
- * TiMOS-C-8.0.R6
- * TiMOS-C-11.0.R2
-
-**7210 SAS-M**
- * TiMOS-B-3.0.R10
- * TiMOS-B-4.0.R7
- * TiMOS-B-5.0.R7
-
-**7210 SAS-D**
- * TiMOS-B-4.0.R7
+**Nokia/ALU**
+ * SROS 14.X/16.X/19.X/22.X
 
 AUTHOR
 ==========
